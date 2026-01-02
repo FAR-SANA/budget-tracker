@@ -15,12 +15,7 @@ class LoginScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -41,10 +36,7 @@ class LoginScreen extends StatelessWidget {
 
                 const Text(
                   "Welcome Back!",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 8),
@@ -111,10 +103,7 @@ class LoginScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    child: const Text("Login", style: TextStyle(fontSize: 18)),
                   ),
                 ),
 
@@ -149,9 +138,7 @@ class LoginScreen extends StatelessWidget {
                 /// Forgot Password
                 const Text(
                   "Forgot password?",
-                  style: TextStyle(
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(color: Colors.grey),
                 ),
               ],
             ),
