@@ -10,10 +10,9 @@ class BudgeeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Budgee',
-      home: const LoginScreen(),
+      home: LoginScreen(), // STARTS WITH LOGIN
     );
   }
 }
