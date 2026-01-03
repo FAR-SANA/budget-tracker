@@ -12,7 +12,7 @@ class BudgeeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(), // STARTS WITH LOGIN
+      home: LoginScreen(),
     );
   }
 }

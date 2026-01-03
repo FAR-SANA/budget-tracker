@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  double income = 27015;
+  double expense = 6940;
+
+  double get balance => income - expense;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +60,7 @@ class HomeScreen extends StatelessWidget {
           radius: 22,
           backgroundColor: Colors.lightBlueAccent,
           child: Icon(Icons.person, color: Colors.white),
-        )
+        ),
       ],
     );
   }
@@ -61,12 +72,8 @@ class HomeScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFE8EEFF),
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          )
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -74,18 +81,18 @@ class HomeScreen extends StatelessWidget {
         children: [
           const Text("My Balance"),
           const SizedBox(height: 8),
-          const Text(
-            "+ Rs. 27510/-",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            "+ Rs. ${balance.toStringAsFixed(2)}",
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text("Spent\n+ Rs 6940/-"),
-              Text("Earned\n- Rs 27015/-"),
+            children: [
+              Text("Spent\nRs ${expense.toStringAsFixed(2)}"),
+              Text("Earned\nRs ${income.toStringAsFixed(2)}"),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -177,12 +184,21 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Icon(Icons.home),
-            Icon(Icons.account_balance_wallet),
-            SizedBox(width: 40),
-            Icon(Icons.pie_chart),
-            Icon(Icons.more_horiz),
+          children: [
+            const Icon(Icons.home),
+            const Icon(Icons.account_balance_wallet),
+            const SizedBox(width: 40),
+            const Icon(Icons.pie_chart),
+
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+              child: const Icon(Icons.more_horiz),
+            ),
           ],
         ),
       ),
