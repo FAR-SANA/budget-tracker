@@ -109,7 +109,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         ),
                         Switch(
                           value: isReminderEnabled,
-                          activeColor: Colors.indigo,
+                          activeThumbColor: Colors.indigo,
                           onChanged: (value) {
                             setState(() {
                               isReminderEnabled = value;
