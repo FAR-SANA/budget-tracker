@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'welcome_screen.dart';
+import 'forgot_password_screen.dart';
 
 
 
@@ -151,10 +152,25 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 15),
 
                 /// Forgot Password
-                const Text(
-                  "Forgot password?",
-                  style: TextStyle(color: Colors.grey),
-                ),
+              /// Forgot Password
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ForgotPasswordScreen(),
+      ),
+    );
+  },
+  child: const Text(
+    "Forgot password?",
+    style: TextStyle(
+      color: Colors.grey,
+      decoration: TextDecoration.underline,
+    ),
+  ),
+),
+
               ],
             ),
           ),
