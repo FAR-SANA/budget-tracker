@@ -25,10 +25,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               /// Welcome Text
               const Text(
                 "Welcome to",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.orange,
-                ),
+                style: TextStyle(fontSize: 18, color: Colors.orange),
               ),
 
               const SizedBox(height: 10),
@@ -49,10 +46,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const Text(
                 "Track where your money goes. Effortlessly.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
 
               const SizedBox(height: 30),
@@ -75,7 +69,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F4FF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
@@ -148,9 +141,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
                     );
                   },
                   child: const Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'profile_screen.dart';
+import '../models/record.dart';
+import 'add_record_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,196 +10,294 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  double income = 27015;
-  double expense = 6940;
+  RecordType selectedType = RecordType.income;
+  List<Record> records = [];
 
-  double get balance => income - expense;
+  double get totalIncome => records
+      .where((r) => r.type == RecordType.income)
+      .fold(0, (sum, r) => sum + r.amount);
+
+  double get totalExpense => records
+      .where((r) => r.type == RecordType.expense)
+      .fold(0, (sum, r) => sum + r.amount);
+
+  double get balance => totalIncome - totalExpense;
 
   @override
   Widget build(BuildContext context) {
+    final filteredRecords = records
+        .where((r) => r.type == selectedType)
+        .toList();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FF),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.amber,
-        onPressed: () {},
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _bottomNav(),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(),
-              const SizedBox(height: 20),
-              _balanceCard(),
-              const SizedBox(height: 20),
-              _dateSelector(),
-              const SizedBox(height: 20),
-              _tabs(),
-              const SizedBox(height: 10),
-              _transactionList(),
-            ],
-          ),
+        child: Column(
+          children: [
+            _header(),
+            _summaryCard(),
+            const SizedBox(height: 20),
+            _dateSelector(),
+            const SizedBox(height: 20),
+            _donutOrEmpty(filteredRecords),
+            const SizedBox(height: 20),
+            _tabs(),
+            _recordList(filteredRecords),
+          ],
         ),
       ),
+      bottomNavigationBar: _bottomNav(),
+      floatingActionButton: _fab(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
-  // Header
+  // ---------------- HEADER ----------------
   Widget _header() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Text(
-          "Hello, Naomi",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: Colors.lightBlueAccent,
-          child: Icon(Icons.person, color: Colors.white),
-        ),
-      ],
-    );
-  }
-
-  // Balance Card
-  Widget _balanceCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8EEFF),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("My Balance"),
-          const SizedBox(height: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: const [
           Text(
-            "+ Rs. ${balance.toStringAsFixed(2)}",
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            "Hello, Naomi",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Spent\nRs ${expense.toStringAsFixed(2)}"),
-              Text("Earned\nRs ${income.toStringAsFixed(2)}"),
-            ],
-          ),
+          CircleAvatar(child: Icon(Icons.person)),
         ],
       ),
     );
   }
 
-  // Date selector
+  // ---------------- SUMMARY ----------------
+  Widget _summaryCard() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8EEFF),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("Balance\n₹${balance.toStringAsFixed(0)}"),
+            Text(
+              selectedType == RecordType.income
+                  ? "Income\n₹${totalIncome.toStringAsFixed(0)}"
+                  : "Expense\n₹${totalExpense.toStringAsFixed(0)}",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- DATE ----------------
   Widget _dateSelector() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
         Icon(Icons.chevron_left),
-        SizedBox(width: 12),
-        Text(
-          "24 September 2025",
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        SizedBox(width: 12),
+        SizedBox(width: 10),
+        Text("24 September 2025"),
+        SizedBox(width: 10),
         Icon(Icons.chevron_right),
       ],
     );
   }
 
-  // Income / Expense Tabs
+  // ---------------- DONUT / EMPTY ----------------
+  Widget _donutOrEmpty(List<Record> list) {
+    if (list.isEmpty) {
+      return Column(
+        children: const [
+          Icon(Icons.pie_chart_outline, size: 100, color: Colors.grey),
+          SizedBox(height: 10),
+          Text(
+            "No records yet. Add one to\nview your daily analysis.",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      );
+    }
+
+    // Simple placeholder donut
+    return Container(
+      height: 160,
+      width: 160,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.indigo),
+    );
+  }
+
+  // ---------------- TABS ----------------
   Widget _tabs() {
     return Row(
-      children: const [
-        Expanded(
-          child: Column(
-            children: [
-              Text("Income", style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 6),
-              Divider(thickness: 2, color: Colors.indigo),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Text("Expense", style: TextStyle(color: Colors.grey)),
-              SizedBox(height: 6),
-              Divider(thickness: 2, color: Colors.grey),
-            ],
-          ),
-        ),
+      children: [
+        _tab("Income", RecordType.income),
+        _tab("Expense", RecordType.expense),
       ],
     );
   }
 
-  // Transaction List
-  Widget _transactionList() {
+  Widget _tab(String title, RecordType type) {
+    final active = selectedType == type;
     return Expanded(
-      child: ListView(
-        children: const [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.indigo,
-              child: Icon(Icons.attach_money, color: Colors.white),
+      child: GestureDetector(
+        onTap: () => setState(() => selectedType = type),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: active ? Colors.indigo : Colors.grey,
+              ),
             ),
-            title: Text("Freelance Work"),
-            trailing: Text("+ Rs 2000/-"),
-          ),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.amber,
-              child: Icon(Icons.card_giftcard, color: Colors.white),
+            Divider(
+              thickness: 2,
+              color: active ? Colors.indigo : Colors.grey.shade300,
             ),
-            title: Text("GPay Cashback"),
-            trailing: Text("+ Rs 15/-"),
-          ),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.indigo,
-              child: Icon(Icons.attach_money, color: Colors.white),
-            ),
-            title: Text("Salary"),
-            trailing: Text("+ Rs 25000/-"),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // Bottom Navigation Bar
+  // ---------------- RECORD LIST ----------------
+  Widget _recordList(List<Record> list) {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: list.length,
+        itemBuilder: (_, i) {
+          final r = list[i];
+          return ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.work)),
+            title: Text(r.title),
+            trailing: Text(
+              "${r.type == RecordType.income ? '+' : '-'}₹${r.amount}",
+              style: TextStyle(
+                color: r.type == RecordType.income ? Colors.green : Colors.red,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------- FAB ----------------
+  Widget _fab() {
+    return Container(
+      height: 64,
+      width: 64,
+      decoration: const BoxDecoration(
+        color: Colors.indigo,
+        shape: BoxShape.circle,
+      ),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: _showAddOptions,
+        child: const Center(
+          child: Icon(Icons.add, color: Colors.white, size: 30),
+        ),
+      ),
+    );
+  }
+
+  void _showAddOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Stack(
+          children: [
+            // tap outside to dismiss
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(color: Colors.transparent),
+            ),
+
+            // popup ABOVE FAB
+            Positioned(
+              bottom: 180, // 👈 height ABOVE FAB (adjust if needed)
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 220, // ✅ same size as before
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 12),
+
+                      ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: const Text("Text"),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final result = await Navigator.push<Record>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AddRecordScreen(type: selectedType),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() => records.add(result));
+                          }
+                        },
+                      ),
+
+                      const Divider(height: 0),
+
+                      ListTile(
+                        leading: const Icon(Icons.mic),
+                        title: const Text("Voice"),
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- BOTTOM NAV ----------------
   Widget _bottomNav() {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Icon(Icons.home),
-            const Icon(Icons.account_balance_wallet),
-            const SizedBox(width: 40),
-            const Icon(Icons.pie_chart),
-
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
-              child: const Icon(Icons.more_horiz),
-            ),
+          children: const [
+            Icon(Icons.home),
+            SizedBox(width: 48),
+            Icon(Icons.track_changes),
           ],
         ),
       ),
