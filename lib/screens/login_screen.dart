@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'welcome_screen.dart';
 import 'forgot_password_screen.dart';
 
+
+
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -12,14 +14,12 @@ class LoginScreen extends StatelessWidget {
       body: Center(
         child: SingleChildScrollView(
           child: Container(
-            width: 320, // ✅ unified width
+            width: 340,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 10),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -27,7 +27,7 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 /// Logo
-                const Text(
+                Text(
                   "BUDGEE",
                   style: TextStyle(
                     fontSize: 28,
@@ -64,10 +64,10 @@ class LoginScreen extends StatelessWidget {
                 /// Email Field
                 TextField(
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.email),
+                    prefixIcon: Icon(Icons.email),
                     hintText: "Email ID",
                     filled: true,
-                    fillColor: const Color(0xFFF0F4FF),
+                    fillColor: Color(0xFFF0F4FF),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -81,11 +81,11 @@ class LoginScreen extends StatelessWidget {
                 TextField(
                   obscureText: true,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: const Icon(Icons.visibility_off),
+                    prefixIcon: Icon(Icons.lock),
+                    suffixIcon: Icon(Icons.visibility_off),
                     hintText: "Password",
                     filled: true,
-                    fillColor: const Color(0xFFF0F4FF),
+                    fillColor: Color(0xFFF0F4FF),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -96,30 +96,32 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 /// Login Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const WelcomeScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A2B5D),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                ),
+               SizedBox(
+  width: double.infinity,
+  height: 50,
+  child: ElevatedButton(
+    onPressed: () {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const WelcomeScreen(),
+    ),
+  );
+},
+
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF1A2B5D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    child: const Text(
+      "Login",
+      style: TextStyle(fontSize: 18, color: Colors.white),
+    ),
+  ),
+),
+
 
                 const SizedBox(height: 15),
 
@@ -149,24 +151,26 @@ class LoginScreen extends StatelessWidget {
 
                 const SizedBox(height: 15),
 
-                /// Forgot Password (clickable)
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ForgotPasswordScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Forgot password?",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
+                /// Forgot Password
+              /// Forgot Password
+GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ForgotPasswordScreen(),
+      ),
+    );
+  },
+  child: const Text(
+    "Forgot password?",
+    style: TextStyle(
+      color: Colors.grey,
+      decoration: TextDecoration.underline,
+    ),
+  ),
+),
+
               ],
             ),
           ),
