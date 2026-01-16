@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../models/record.dart';
 import 'add_record_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,12 +15,19 @@ class _HomeScreenState extends State<HomeScreen> {
   RecordType selectedType = RecordType.income;
   List<Record> records = [];
 
+  DateTime selectedDate = DateTime.now();
+  int touchedIndex = -1;
+
   double get totalIncome => records
-      .where((r) => r.type == RecordType.income)
+      .where(
+        (r) => r.type == RecordType.income && _isSameDay(r.date, selectedDate),
+      )
       .fold(0, (sum, r) => sum + r.amount);
 
   double get totalExpense => records
-      .where((r) => r.type == RecordType.expense)
+      .where(
+        (r) => r.type == RecordType.expense && _isSameDay(r.date, selectedDate),
+      )
       .fold(0, (sum, r) => sum + r.amount);
 
   double get balance => totalIncome - totalExpense;
@@ -26,7 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredRecords = records
-        .where((r) => r.type == selectedType)
+        .where(
+          (r) => r.type == selectedType && _isSameDay(r.date, selectedDate),
+        )
         .toList();
 
     return Scaffold(
@@ -96,14 +107,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ---------------- DATE ----------------
   Widget _dateSelector() {
+    final today = DateTime.now();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Icon(Icons.chevron_left),
-        SizedBox(width: 10),
-        Text("24 September 2025"),
-        SizedBox(width: 10),
-        Icon(Icons.chevron_right),
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: () {
+            setState(() {
+              selectedDate = selectedDate.subtract(const Duration(days: 1));
+            });
+          },
+        ),
+        Text(
+          _formatDate(selectedDate),
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed:
+              selectedDate.isBefore(
+                DateTime(today.year, today.month, today.day),
+              )
+              ? () {
+                  setState(() {
+                    selectedDate = selectedDate.add(const Duration(days: 1));
+                  });
+                }
+              : null,
+        ),
       ],
     );
   }
@@ -124,11 +157,36 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // Simple placeholder donut
-    return Container(
-      height: 160,
-      width: 160,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.indigo),
+    final data = _groupByCategory(list);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: PieChart(
+            PieChartData(
+              centerSpaceRadius: 45,
+              sectionsSpace: 2,
+              pieTouchData: PieTouchData(
+                touchCallback: (event, response) {
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        response == null ||
+                        response.touchedSection == null) {
+                      touchedIndex = -1;
+                      return;
+                    }
+                    touchedIndex = response.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              sections: _buildSections(data),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _legend(data),
+      ],
     );
   }
 
@@ -208,82 +266,84 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) {
-        return Stack(
-          children: [
-            // tap outside to dismiss
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(color: Colors.transparent),
-            ),
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) {
+      return Stack(
+        children: [
+          // Tap outside to dismiss
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(color: Colors.transparent),
+          ),
 
-            // popup ABOVE FAB
-            Positioned(
-              bottom: 180, // 👈 height ABOVE FAB (adjust if needed)
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  width: 220, // ✅ same size as before
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 12),
+          // Popup ABOVE FAB
+          Positioned(
+            bottom: 180,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 220,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
 
-                      ListTile(
-                        leading: const Icon(Icons.edit),
-                        title: const Text("Text"),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          final result = await Navigator.push<Record>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  AddRecordScreen(type: selectedType),
-                            ),
-                          );
-                          if (result != null) {
-                            setState(() => records.add(result));
-                          }
-                        },
-                      ),
+                    ListTile(
+                      leading: const Icon(Icons.edit),
+                      title: const Text("Text"),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final result = await Navigator.push<Record>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AddRecordScreen(type: selectedType),
+                          ),
+                        );
+                        if (result != null) {
+                          setState(() => records.add(result));
+                        }
+                      },
+                    ),
 
-                      const Divider(height: 0),
+                    const Divider(height: 0),
 
-                      ListTile(
-                        leading: const Icon(Icons.mic),
-                        title: const Text("Voice"),
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
+                    ListTile(
+                      leading: const Icon(Icons.mic),
+                      title: const Text("Voice"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // voice logic later
+                      },
+                    ),
 
-                      const SizedBox(height: 12),
-                    ],
-                  ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   // ---------------- BOTTOM NAV ----------------
   Widget _bottomNav() {
@@ -302,5 +362,89 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // ---------------- CHART HELPERS ----------------
+  Map<String, double> _groupByCategory(List<Record> list) {
+    final Map<String, double> map = {};
+    for (final r in list) {
+      final key = r.category;
+      map[key] = (map[key] ?? 0) + r.amount;
+    }
+    return map;
+  }
+
+  List<PieChartSectionData> _buildSections(Map<String, double> data) {
+    final total = data.values.fold(0.0, (a, b) => a + b);
+    final colors = Colors.primaries;
+
+    return data.entries.toList().asMap().entries.map((entry) {
+      final index = entry.key;
+      final value = entry.value.value;
+      final percent = (value / total * 100).toStringAsFixed(0);
+
+      final isTouched = index == touchedIndex;
+      final radius = isTouched ? 60.0 : 50.0;
+
+      return PieChartSectionData(
+        value: value,
+        title: "$percent%",
+        radius: radius,
+        color: colors[index % colors.length],
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _legend(Map<String, double> data) {
+    final colors = Colors.primaries;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: data.entries.toList().asMap().entries.map((entry) {
+        final index = entry.key;
+        final category = entry.value.key;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              color: colors[index % colors.length],
+            ),
+            const SizedBox(width: 6),
+            Text(category),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // ---------------- HELPERS ----------------
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  String _formatDate(DateTime d) {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return "${d.day} ${months[d.month - 1]} ${d.year}";
   }
 }

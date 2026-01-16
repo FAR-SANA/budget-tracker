@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -9,6 +10,18 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
+  Future<void> _requestNotificationPermissionAndGoHome() async {
+  await Permission.notification.request();
+
+  if (!mounted) return;
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (_) => const HomeScreen()),
+  );
+}
+
+
   bool isReminderEnabled = false;
 
   @override
@@ -101,14 +114,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           ),
                         ),
                         Switch(
-                          value: isReminderEnabled,
-                          activeThumbColor: Colors.indigo,
-                          onChanged: (value) {
-                            setState(() {
-                              isReminderEnabled = value;
-                            });
-                          },
-                        ),
+  value: false, // 👈 always OFF
+  activeThumbColor: Colors.indigo,
+  onChanged: (value) async {
+    await _requestNotificationPermissionAndGoHome();
+  },
+),
+
                       ],
                     ),
                   ],

@@ -5,11 +5,13 @@ class Record {
   final double amount;
   final DateTime date;
   final RecordType type;
+  final String category; // ✅ added
 
   Record({
     required this.title,
     required this.amount,
     required this.date,
     required this.type,
+    this.category = "miscellaneous", // ✅ default
   });
 }
