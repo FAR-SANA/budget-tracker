@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/record.dart';
 import '../models/account.dart';
+import 'profile_screen.dart';
 import 'add_record_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -187,12 +188,22 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Text(
+        children: [
+          const Text(
             "Hello, Naomi",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          CircleAvatar(child: Icon(Icons.person)),
+
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+            child: const CircleAvatar(child: Icon(Icons.person)),
+          ),
         ],
       ),
     );
