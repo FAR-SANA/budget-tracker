@@ -27,14 +27,17 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 /// Logo
-                const Text(
-                  "BUDGEE",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B5D),
-                  ),
-                ),
+                      const SizedBox(height: 20),
+
+/// Logo Image
+Image.asset(
+  'assets/images/budgee_logo.png',
+  height: 80,
+),
+
+const SizedBox(height: 20),
+
+
 
                 const SizedBox(height: 20),
 
