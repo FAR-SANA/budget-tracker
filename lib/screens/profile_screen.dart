@@ -20,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Header
+            /// PROFILE HEADER
             Row(
               children: [
                 const CircleAvatar(
@@ -37,7 +37,7 @@ class ProfileScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange,
+                        color: Color(0xFFFFB300),
                       ),
                     ),
                     SizedBox(height: 4),
@@ -52,77 +52,97 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // Account Settings
+            /// ACCOUNT SETTINGS TITLE
             const Text(
               "Account Settings",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.orange,
+                fontSize: 16,
+                color: Color(0xFF1A2B5D),
               ),
             ),
             const SizedBox(height: 10),
 
-            _settingsCard([
-              _settingsItem(Icons.person, "Edit Profile"),
-              _settingsItem(Icons.lock, "Change Password"),
-              _settingsItem(Icons.sms, "Enable SMS Tracking"),
-            ]),
+            /// ACCOUNT SETTINGS CARD
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8EEFF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: const [
+                  ListTile(
+                    leading: Icon(Icons.person, color: Colors.indigo),
+                    title: Text("Edit Profile"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.lock, color: Colors.indigo),
+                    title: Text("Change Password"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.sms, color: Colors.indigo),
+                    title: Text("Enable SMS Tracking"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 25),
 
-            // Settings
+            /// PREFERENCES TITLE
             const Text(
-              "Settings",
+              "Preferences",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.orange,
+                fontSize: 16,
+                color: Color(0xFF1A2B5D),
               ),
             ),
             const SizedBox(height: 10),
 
-            _settingsCard([
-              _settingsItem(Icons.notifications, "Enable Notification"),
-              _settingsItem(Icons.shield, "Terms Of Use"),
-              _settingsItem(Icons.logout, "Logout", isLogout: true),
-            ]),
+            /// PREFERENCES CARD
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8EEFF),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: const [
+                  ListTile(
+                    leading: Icon(Icons.notifications, color: Colors.indigo),
+                    title: Text("Manage Notification"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.dark_mode, color: Colors.indigo),
+                    title: Text("Dark Mode"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.shield, color: Colors.indigo),
+                    title: Text("Terms Of Use"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.logout, color: Colors.red),
+                    title: Text("Logout", style: TextStyle(color: Colors.red)),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  // Settings Card Container
-  Widget _settingsCard(List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8EEFF),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  // Individual Row
-  Widget _settingsItem(IconData icon, String title,
-      {bool isLogout = false}) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isLogout ? Colors.red : Colors.indigo,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isLogout ? Colors.red : Colors.black,
-        ),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: isLogout ? Colors.red : Colors.grey,
-      ),
-      onTap: () {},
     );
   }
 }

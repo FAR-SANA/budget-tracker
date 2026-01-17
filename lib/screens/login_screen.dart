@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'welcome_screen.dart';
 import 'forgot_password_screen.dart';
+import 'signup_screen.dart';
+
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -48,19 +50,30 @@ const SizedBox(height: 20),
 
                 const SizedBox(height: 8),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text("Don't have an account? "),
-                    Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        color: Color(0xFF1A2B5D),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                  Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    const Text("Don't have an account? "),
+    GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SignupScreen(),
+          ),
+        );
+      },
+      child: const Text(
+        "Sign Up",
+        style: TextStyle(
+          color: Color(0xFF1A2B5D),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ],
+),
+
 
                 const SizedBox(height: 20),
 
