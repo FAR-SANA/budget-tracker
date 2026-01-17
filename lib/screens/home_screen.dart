@@ -211,11 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              primaryAccount?.name ?? "Primary Account",
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-
             Text("Balance\n₹${balance.toStringAsFixed(0)}"),
             Text(
               selectedType == RecordType.income
