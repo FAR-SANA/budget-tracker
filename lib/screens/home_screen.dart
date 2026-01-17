@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/record.dart';
+import '../models/account.dart';
 import 'add_record_screen.dart';
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Account? primaryAccount;
   RecordType selectedType = RecordType.income;
   List<Record> records = [];
 
@@ -30,7 +31,124 @@ class _HomeScreenState extends State<HomeScreen> {
       )
       .fold(0, (sum, r) => sum + r.amount);
 
-  double get balance => totalIncome - totalExpense;
+  double get balance {
+    final baseBalance = primaryAccount?.balance ?? 0;
+    return baseBalance + totalIncome - totalExpense;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (primaryAccount == null) {
+        _showAddAccountDialog();
+      }
+    });
+  }
+
+  void _showAddAccountDialog() {
+    final nameCtrl = TextEditingController();
+    final amountCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // ❗ user MUST add account
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Text(
+                    "Add Account",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF142752),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text("Account Name"),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: const Color(0xFFE3EBFD),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                const Text("Amount"),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    prefixText: "₹ ",
+                    filled: true,
+                    fillColor: const Color(0xFFE3EBFD),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF142752),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+                        return;
+                      }
+
+                      setState(() {
+                        primaryAccount = Account(
+                          name: nameCtrl.text,
+                          balance: double.parse(amountCtrl.text),
+                        );
+                      });
+
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Save Account",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +211,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Text(
+              primaryAccount?.name ?? "Primary Account",
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+
             Text("Balance\n₹${balance.toStringAsFixed(0)}"),
             Text(
               selectedType == RecordType.income
@@ -266,84 +389,83 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddOptions() {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (_) {
-      return Stack(
-        children: [
-          // Tap outside to dismiss
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(color: Colors.transparent),
-          ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Stack(
+          children: [
+            // Tap outside to dismiss
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(color: Colors.transparent),
+            ),
 
-          // Popup ABOVE FAB
-          Positioned(
-            bottom: 180,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 220,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
+            // Popup ABOVE FAB
+            Positioned(
+              bottom: 180,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 220,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 12),
 
-                    ListTile(
-                      leading: const Icon(Icons.edit),
-                      title: const Text("Text"),
-                      onTap: () async {
-                        Navigator.pop(context);
-                        final result = await Navigator.push<Record>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AddRecordScreen(type: selectedType),
-                          ),
-                        );
-                        if (result != null) {
-                          setState(() => records.add(result));
-                        }
-                      },
-                    ),
+                      ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: const Text("Text"),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final result = await Navigator.push<Record>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AddRecordScreen(type: selectedType),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() => records.add(result));
+                          }
+                        },
+                      ),
 
-                    const Divider(height: 0),
+                      const Divider(height: 0),
 
-                    ListTile(
-                      leading: const Icon(Icons.mic),
-                      title: const Text("Voice"),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // voice logic later
-                      },
-                    ),
+                      ListTile(
+                        leading: const Icon(Icons.mic),
+                        title: const Text("Voice"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          // voice logic later
+                        },
+                      ),
 
-                    const SizedBox(height: 12),
-                  ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+          ],
+        );
+      },
+    );
+  }
 
   // ---------------- BOTTOM NAV ----------------
   Widget _bottomNav() {
