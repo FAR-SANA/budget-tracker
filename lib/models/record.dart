@@ -1,17 +1,22 @@
-enum RecordType { income, expense }
+enum RecordType {
+  income,
+  expense,
+}
 
 class Record {
   final String title;
   final double amount;
   final DateTime date;
   final RecordType type;
-  final String category; // ✅ added
+  final String category;
+  final String? repeatType;
 
   Record({
     required this.title,
     required this.amount,
     required this.date,
     required this.type,
-    this.category = "miscellaneous", // ✅ default
+    required this.category,
+    this.repeatType,
   });
 }
