@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/record.dart';
 
 class EditRecordScreen extends StatefulWidget {
@@ -27,8 +28,10 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     super.initState();
 
     titleCtrl = TextEditingController(text: widget.record.title);
-    amountCtrl =
-        TextEditingController(text: widget.record.amount.toStringAsFixed(0));
+    amountCtrl = TextEditingController(
+      text: widget.record.amount.toStringAsFixed(0),
+    );
+
     dateCtrl = TextEditingController(
       text:
           "${widget.record.date.day}/${widget.record.date.month}/${widget.record.date.year}",
@@ -86,17 +89,21 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
 
                 Row(
                   children: [
-                    Expanded(child: _categoryButton()),
+                    Flexible(child: _categoryButton()),
                     const SizedBox(width: 12),
-                    Expanded(child: _repeatButton()),
+                    Flexible(child: _repeatButton()),
                   ],
                 ),
 
                 const SizedBox(height: 20),
+
                 _budgetButton(),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
+
                 _bottomButtons(),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -106,6 +113,7 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   }
 
   // ---------------- TOGGLE ----------------
+
   Widget _toggle() {
     return Row(
       children: [
@@ -142,14 +150,28 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   }
 
   // ---------------- INPUTS ----------------
+
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
 
+  // ✅ UPDATED: Allows decimals
   Widget _input(TextEditingController ctrl, {String? prefix}) {
+    final isAmount = prefix != null;
+
     return TextFormField(
       controller: ctrl,
+
+      keyboardType: isAmount
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+
+      inputFormatters: isAmount
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))]
+          : null,
+
       validator: (v) =>
           v == null || v.isEmpty ? "This field is required" : null,
+
       decoration: InputDecoration(
         prefixText: prefix,
         filled: true,
@@ -190,13 +212,13 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     if (picked != null) {
       setState(() {
         selectedDate = picked;
-        dateCtrl.text =
-            "${picked.day}/${picked.month}/${picked.year}";
+        dateCtrl.text = "${picked.day}/${picked.month}/${picked.year}";
       });
     }
   }
 
   // ---------------- BUTTONS ----------------
+
   Widget _accountButton() {
     return Container(
       width: double.infinity,
@@ -206,27 +228,80 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(
-        child: Text(
-          "Select account",
-          style: TextStyle(color: Colors.white),
-        ),
+        child: Text("Select account", style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
   Widget _categoryButton() {
-    return _pill(
-      icon: Icons.wallet,
-      text: selectedCategory ?? "Category",
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3EBFD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          selectedCategory == null
+              ? const Icon(Icons.wallet, size: 20, color: Colors.grey)
+              : Image.asset(
+                  "assets/icons/categories/$selectedCategory.png",
+                  width: 20,
+                  height: 20,
+                ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              selectedCategory ?? "Category",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: selectedCategory == null ? Colors.grey : Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Icon(Icons.keyboard_arrow_down, size: 20),
+        ],
+      ),
     );
   }
 
   Widget _repeatButton() {
-    return _pill(
-      icon: repeatType == null
-          ? Icons.radio_button_unchecked
-          : Icons.check_circle,
-      text: repeatType ?? "Repeat",
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3EBFD),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: repeatType == null
+                  ? Colors.transparent
+                  : Colors.indigo.withOpacity(0.15),
+            ),
+            child: Icon(
+              repeatType == null
+                  ? Icons.radio_button_unchecked
+                  : Icons.check_circle,
+              size: 20,
+              color: const Color(0xFF142752),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              repeatType ?? "Repeat",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -239,49 +314,37 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
       ),
       child: const Row(
         children: [
-          Expanded(child: Text("Budget: College Tuition Fee")),
+          Expanded(child: Text("Link to a budget")),
           Icon(Icons.keyboard_arrow_down),
         ],
       ),
     );
   }
 
-  Widget _pill({required IconData icon, required String text}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: const Color(0xFF142752)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-
   // ---------------- SAVE / CANCEL ----------------
+
   Widget _bottomButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF142752)),
           child: const Text("CANCEL"),
         ),
         ElevatedButton(
           onPressed: _save,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF142752),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           ),
-          child: const Text("SAVE"),
+          child: const Text(
+            "SAVE",
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );

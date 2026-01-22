@@ -268,13 +268,13 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Balance\n₹${balance.toStringAsFixed(0)}",
+                  "Balance\n₹${balance.toStringAsFixed(2)}",
                   style: const TextStyle(fontSize: 15),
                 ),
                 Text(
                   selectedType == RecordType.income
-                      ? "Income\n₹${totalIncome.toStringAsFixed(0)}"
-                      : "Expense\n₹${totalExpense.toStringAsFixed(0)}",
+                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}}"
+                      : "Expense\n₹${totalExpense.toStringAsFixed(2)}",
                   style: const TextStyle(fontSize: 15),
                 ),
               ],
@@ -417,14 +417,24 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final updated = await Navigator.push<Record>(
                 context,
                 MaterialPageRoute(
                   builder: (_) => RecordDetailsScreen(record: r),
                 ),
               );
+
+              if (updated != null) {
+                setState(() {
+                  final index = records.indexOf(r);
+                  if (index != -1) {
+                    records[index] = updated;
+                  }
+                });
+              }
             },
+
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: BackdropFilter(
@@ -476,7 +486,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Flexible(
                         child: Text(
-                          "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(0)}",
+                          "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,

@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // ✅ ADD
+import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  // ✅ FUNCTION TO OPEN APP SETTINGS
+  Future<void> _openNotificationSettings() async {
+    final Uri uri = Uri.parse('app-settings:');
+
+    if (!await launchUrl(uri)) {
+      throw 'Could not open app settings';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -15,6 +28,7 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -28,7 +42,9 @@ class ProfileScreen extends StatelessWidget {
                   backgroundColor: Color(0xFFB3E5FC),
                   child: Icon(Icons.person, size: 40),
                 ),
+
                 const SizedBox(width: 15),
+
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
@@ -40,7 +56,9 @@ class ProfileScreen extends StatelessWidget {
                         color: Color(0xFFFFB300),
                       ),
                     ),
+
                     SizedBox(height: 4),
+
                     Text(
                       "User ID: juliette_123",
                       style: TextStyle(color: Colors.grey),
@@ -61,6 +79,7 @@ class ProfileScreen extends StatelessWidget {
                 color: Color(0xFF1A2B5D),
               ),
             ),
+
             const SizedBox(height: 10),
 
             /// ACCOUNT SETTINGS CARD
@@ -71,21 +90,46 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
-                children: const [
+                children: [
+                  /// EDIT PROFILE
                   ListTile(
-                    leading: Icon(Icons.person, color: Colors.indigo),
-                    title: Text("Edit Profile"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    leading: const Icon(Icons.person, color: Colors.indigo),
+                    title: const Text("Edit Profile"),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
+                      );
+                    },
                   ),
+
+                  /// CHANGE PASSWORD
                   ListTile(
-                    leading: Icon(Icons.lock, color: Colors.indigo),
-                    title: Text("Change Password"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    leading: const Icon(Icons.lock, color: Colors.indigo),
+                    title: const Text("Change Password"),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordScreen(),
+                        ),
+                      );
+                    },
                   ),
+
+                  /// MANAGE NOTIFICATIONS ✅ UPDATED
                   ListTile(
-                    leading: Icon(Icons.sms, color: Colors.indigo),
-                    title: Text("Enable SMS Tracking"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    leading: const Icon(Icons.sms, color: Colors.indigo),
+                    title: const Text("Enable SMS Tracking"),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+                    onTap: _openNotificationSettings,
                   ),
                 ],
               ),
@@ -102,6 +146,7 @@ class ProfileScreen extends StatelessWidget {
                 color: Color(0xFF1A2B5D),
               ),
             ),
+
             const SizedBox(height: 10),
 
             /// PREFERENCES CARD
@@ -118,16 +163,19 @@ class ProfileScreen extends StatelessWidget {
                     title: Text("Manage Notification"),
                     trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
+
                   ListTile(
                     leading: Icon(Icons.dark_mode, color: Colors.indigo),
                     title: Text("Dark Mode"),
                     trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
+
                   ListTile(
                     leading: Icon(Icons.shield, color: Colors.indigo),
                     title: Text("Terms Of Use"),
                     trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
+
                   ListTile(
                     leading: Icon(Icons.logout, color: Colors.red),
                     title: Text("Logout", style: TextStyle(color: Colors.red)),
