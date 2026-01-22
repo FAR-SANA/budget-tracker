@@ -64,32 +64,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             /// ACCOUNT SETTINGS CARD
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8EEFF),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: const [
-                  ListTile(
-                    leading: Icon(Icons.person, color: Colors.indigo),
-                    title: Text("Edit Profile"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.lock, color: Colors.indigo),
-                    title: Text("Change Password"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.sms, color: Colors.indigo),
-                    title: Text("Enable SMS Tracking"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                ],
-              ),
-            ),
+            _settingsCard([
+              _settingsItem(Icons.person_outline, "Edit Profile"),
+              _settingsItem(Icons.lock_outline, "Change Password"),
+              _settingsItem(Icons.sms_outlined, "Enable SMS Tracking"),
+              _settingsItem(Icons.person_add_alt, "Add Account"),
+            ]),
 
             const SizedBox(height: 25),
 
@@ -105,44 +85,57 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             /// PREFERENCES CARD
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8EEFF),
-                borderRadius: BorderRadius.circular(16),
+            _settingsCard([
+              _settingsItem(Icons.notifications_none, "Manage Notification"),
+              _settingsItem(Icons.dark_mode_outlined, "Dark Mode"),
+              _settingsItem(Icons.shield_outlined, "Terms Of Use"),
+              _settingsItem(
+                Icons.logout,
+                "Logout",
+                isLogout: true,
               ),
-              child: Column(
-                children: const [
-                  ListTile(
-                    leading: Icon(Icons.notifications, color: Colors.indigo),
-                    title: Text("Manage Notification"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.dark_mode, color: Colors.indigo),
-                    title: Text("Dark Mode"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.shield, color: Colors.indigo),
-                    title: Text("Terms Of Use"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.logout, color: Colors.red),
-                    title: Text("Logout", style: TextStyle(color: Colors.red)),
-                    trailing: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ]),
           ],
         ),
       ),
+    );
+  }
+
+  /// SETTINGS CARD CONTAINER
+  Widget _settingsCard(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8EEFF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(children : children),
+    );
+  }
+
+  /// INDIVIDUAL ROW
+  Widget _settingsItem(
+    IconData icon,
+    String title, {
+    bool isLogout = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isLogout ? Colors.red : Colors.indigo,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isLogout ? Colors.red : Colors.black,
+        ),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: isLogout ? Colors.red : Colors.grey,
+      ),
+      onTap: () {},
     );
   }
 }
