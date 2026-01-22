@@ -58,6 +58,7 @@ flutter:
   assets:
     - assets/icons/categories/
     - assets/images/budgee_logo.png
+    - assets/images/logo.png
 
  
 

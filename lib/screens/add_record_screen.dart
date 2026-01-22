@@ -53,15 +53,15 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                   _toggle(),
                   const SizedBox(height: 20),
 
-                  _label("Title"),
+                  _label("Title *"),
                   _titleField(),
                   const SizedBox(height: 15),
 
-                  _label("Amount"),
+                  _label("Amount *"),
                   _amountField(),
                   const SizedBox(height: 15),
 
-                  _label("Date"),
+                  _label("Date *"),
                   _dateField(),
                   const SizedBox(height: 15),
 
@@ -503,6 +503,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       amount: double.parse(amountCtrl.text),
       date: selectedDate!,
       type: selectedType,
+      category: selectedCategory ?? "miscellaneous",
     );
 
     Navigator.pop(context, record);

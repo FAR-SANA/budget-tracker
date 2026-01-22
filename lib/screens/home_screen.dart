@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'budget_screen.dart';
+import 'dart:ui';
 import '../models/record.dart';
+import 'record_details_screen.dart';
 import '../models/account.dart';
 import 'profile_screen.dart';
 import 'add_record_screen.dart';
@@ -162,20 +165,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            _header(),
-            _summaryCard(),
-            const SizedBox(height: 20),
-            _dateSelector(),
-            const SizedBox(height: 20),
-            _donutOrEmpty(filteredRecords),
-            const SizedBox(height: 20),
-            _tabs(),
-            _recordList(filteredRecords),
-          ],
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header(),
+              _summaryCard(),
+              const SizedBox(height: 20),
+              _dateSelector(),
+              const SizedBox(height: 20),
+              _donutOrEmpty(filteredRecords),
+              const SizedBox(height: 20),
+              _tabs(),
+              _recordList(filteredRecords),
+              const SizedBox(height: 100), // 👈 space for FAB
+            ],
+          ),
         ),
       ),
+
       bottomNavigationBar: _bottomNav(),
       floatingActionButton: _fab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -185,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------- HEADER ----------------
   Widget _header() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -202,7 +211,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
               );
             },
-            child: const CircleAvatar(child: Icon(Icons.person)),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFE8EEFF), // app soft blue
+              child: const Icon(
+                Icons.person,
+                color: Color(0xFF142752), // primary app color
+                size: 22,
+              ),
+            ),
           ),
         ],
       ),
@@ -219,14 +236,48 @@ class _HomeScreenState extends State<HomeScreen> {
           color: const Color(0xFFE8EEFF),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Balance\n₹${balance.toStringAsFixed(0)}"),
-            Text(
-              selectedType == RecordType.income
-                  ? "Income\n₹${totalIncome.toStringAsFixed(0)}"
-                  : "Expense\n₹${totalExpense.toStringAsFixed(0)}",
+            // 🔹 ACCOUNT NAME
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.contain,
+                ),
+
+                const SizedBox(width: 8),
+                Text(
+                  primaryAccount?.name ?? "Account",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF142752),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // 🔹 BALANCE + INCOME / EXPENSE
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Balance\n₹${balance.toStringAsFixed(0)}",
+                  style: const TextStyle(fontSize: 15),
+                ),
+                Text(
+                  selectedType == RecordType.income
+                      ? "Income\n₹${totalIncome.toStringAsFixed(0)}"
+                      : "Expense\n₹${totalExpense.toStringAsFixed(0)}",
+                  style: const TextStyle(fontSize: 15),
+                ),
+              ],
             ),
           ],
         ),
@@ -340,12 +391,12 @@ class _HomeScreenState extends State<HomeScreen> {
               title,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: active ? Colors.indigo : Colors.grey,
+                color: active ? const Color(0xFF142752) : Colors.blue.shade200,
               ),
             ),
             Divider(
-              thickness: 2,
-              color: active ? Colors.indigo : Colors.grey.shade300,
+              thickness: 3,
+              color: active ? const Color(0xFF142752) : Colors.blue.shade200,
             ),
           ],
         ),
@@ -355,23 +406,97 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ---------------- RECORD LIST ----------------
   Widget _recordList(List<Record> list) {
-    return Expanded(
-      child: ListView.builder(
-        itemCount: list.length,
-        itemBuilder: (_, i) {
-          final r = list[i];
-          return ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.work)),
-            title: Text(r.title),
-            trailing: Text(
-              "${r.type == RecordType.income ? '+' : '-'}₹${r.amount}",
-              style: TextStyle(
-                color: r.type == RecordType.income ? Colors.green : Colors.red,
+    return ListView.builder(
+      itemCount: list.length,
+      shrinkWrap: true, // ✅ key
+      physics: const NeverScrollableScrollPhysics(), // ✅ key
+      itemBuilder: (_, i) {
+        final r = list[i];
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecordDetailsScreen(record: r),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50]!.withOpacity(0.65), // glass effect
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.blue[100]!.withOpacity(0.35),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: const Color(0xFF142752),
+                              child: const Icon(
+                                Icons.work,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                r.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF142752),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: Text(
+                          "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(0)}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: r.type == RecordType.income
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -380,9 +505,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       height: 64,
       width: 64,
-      decoration: const BoxDecoration(
-        color: Colors.indigo,
+      decoration: BoxDecoration(
+        color: const Color(0xFF142752),
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4), // shadow downwards
+          ),
+        ],
       ),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -446,6 +578,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                           if (result != null) {
                             setState(() => records.add(result));
+
+                            // ✅ confirmation message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  "Record added successfully",
+                                ),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                backgroundColor: const Color(0xFF142752),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
                           }
                         },
                       ),
@@ -482,10 +633,18 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
+          children: [
             Icon(Icons.home),
             SizedBox(width: 48),
-            Icon(Icons.track_changes),
+            IconButton(
+              icon: const Icon(Icons.track_changes),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BudgetScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),
