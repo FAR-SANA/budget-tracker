@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // ✅ ADD
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  // ✅ FUNCTION TO OPEN APP SETTINGS
-  Future<void> _openNotificationSettings() async {
-    final Uri uri = Uri.parse('app-settings:');
-
-    if (!await launchUrl(uri)) {
-      throw 'Could not open app settings';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +97,10 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
 
-                  /// CHANGE PASSWORD
                   ListTile(
                     leading: const Icon(Icons.lock, color: Colors.indigo),
                     title: const Text("Change Password"),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-
                     onTap: () {
                       Navigator.push(
                         context,
@@ -123,13 +111,10 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
 
-                  /// MANAGE NOTIFICATIONS ✅ UPDATED
-                  ListTile(
-                    leading: const Icon(Icons.sms, color: Colors.indigo),
-                    title: const Text("Enable SMS Tracking"),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-
-                    onTap: _openNotificationSettings,
+                  const ListTile(
+                    leading: Icon(Icons.sms, color: Colors.indigo),
+                    title: Text("Enable SMS Tracking"),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
                   ),
                 ],
               ),
