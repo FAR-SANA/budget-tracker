@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'welcome_screen.dart';
 import 'login_screen.dart';
 
@@ -12,6 +13,53 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   bool isPasswordHidden = true;
+
+  // ✅ Controllers
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  final supabase = Supabase.instance.client;
+
+  // ✅ SIGN UP FUNCTION
+ Future<void> signUpUser() async {
+  try {
+    final response = await supabase.auth.signUp(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    final user = response.user;
+    final session = response.session;
+
+    if (user == null) {
+      throw 'Signup failed. Try again.';
+    }
+
+    // ✅ Email confirmation required
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Account created! Please verify your email before logging in.",
+          ),
+        ),
+      );
+
+      // 🚫 STOP HERE — no insert, no navigation
+      return;
+    }
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +107,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    // ---------- LOGO ----------
                                     Image.asset(
                                       'assets/images/budgee_logo.png',
                                       height: 60,
@@ -67,7 +114,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 20),
 
-                                    // ---------- TITLE ----------
                                     const Text(
                                       "Create Your Account",
                                       style: TextStyle(
@@ -79,7 +125,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 6),
 
-                                    // ---------- SIGN IN LINK ----------
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -113,8 +158,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 24),
 
-                                    // ---------- NAME ----------
+                                    // NAME
                                     TextField(
+                                      controller: nameController,
                                       decoration: InputDecoration(
                                         hintText: "Full Name",
                                         prefixIcon: const Icon(
@@ -135,8 +181,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 16),
 
-                                    // ---------- EMAIL ----------
+                                    // EMAIL
                                     TextField(
+                                      controller: emailController,
                                       decoration: InputDecoration(
                                         hintText: "Email ID",
                                         prefixIcon: const Icon(
@@ -157,8 +204,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 16),
 
-                                    // ---------- PASSWORD ----------
+                                    // PASSWORD
                                     TextField(
+                                      controller: passwordController,
                                       obscureText: isPasswordHidden,
                                       decoration: InputDecoration(
                                         hintText: "Password",
@@ -193,7 +241,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                     const SizedBox(height: 28),
 
-                                    // ---------- SIGN UP BUTTON ----------
+                                    // SIGN UP BUTTON
                                     SizedBox(
                                       width: double.infinity,
                                       height: 52,
@@ -209,15 +257,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                           elevation: 4,
                                         ),
-                                        onPressed: () {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const WelcomeScreen(),
-                                            ),
-                                          );
-                                        },
+                                        onPressed: signUpUser,
                                         child: const Text(
                                           "Sign Up",
                                           style: TextStyle(
