@@ -6,6 +6,7 @@ import '../models/record.dart';
 import 'record_details_screen.dart';
 import '../models/account.dart';
 import 'profile_screen.dart';
+import '../services/reminder_scheduler.dart';
 import 'add_record_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -273,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   selectedType == RecordType.income
-                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}}"
+                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}"
                       : "Expense\n₹${totalExpense.toStringAsFixed(2)}",
                   style: const TextStyle(fontSize: 15),
                 ),
@@ -432,6 +433,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     records[index] = updated;
                   }
                 });
+
+                await ReminderScheduler.schedule(records);
               }
             },
 
@@ -588,6 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                           if (result != null) {
                             setState(() => records.add(result));
+                            await ReminderScheduler.schedule(records);
 
                             // ✅ confirmation message
                             ScaffoldMessenger.of(context).showSnackBar(

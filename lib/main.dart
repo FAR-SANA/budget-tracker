@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'services/notification_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/welcome_screen.dart'; // ✅ ADDED
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Initialize Supabase
+  await NotificationService.init();
+
   await Supabase.initialize(
     url: 'https://zpfqupnigkvfrjukuquq.supabase.co',
     anonKey: 'sb_publishable_iTpvGf7x_nu48jJYcc88oA__SWIRoB-',
@@ -24,8 +26,8 @@ class BudgeeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Budgee',
 
-      // ✅ Start with Login Screen
-      home: const LoginScreen(),
+      // ✅ CHANGED: Start with Splash Screen
+      home: const WelcomeScreen(),
     );
   }
 }
