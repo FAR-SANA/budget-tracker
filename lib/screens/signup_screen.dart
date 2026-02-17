@@ -1,6 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+<<<<<<< HEAD
+=======
+import 'welcome_screen.dart';
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
 import 'login_screen.dart';
 import 'home_screen.dart'; // ✅ CHANGED: Added HomeScreen import
 
@@ -14,12 +18,17 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   bool isPasswordHidden = true;
 
+<<<<<<< HEAD
+=======
+  // ✅ Controllers
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   final supabase = Supabase.instance.client;
 
+<<<<<<< HEAD
   Stream<AuthState>? _authStateStream; // ✅ CHANGED: Added auth stream
 
   @override
@@ -87,6 +96,47 @@ class _SignupScreenState extends State<SignupScreen> {
     passwordController.dispose();
     super.dispose();
   }
+=======
+  // ✅ SIGN UP FUNCTION
+ Future<void> signUpUser() async {
+  try {
+    final response = await supabase.auth.signUp(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    final user = response.user;
+    final session = response.session;
+
+    if (user == null) {
+      throw 'Signup failed. Try again.';
+    }
+
+    // ✅ Email confirmation required
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Account created! Please verify your email before logging in.",
+          ),
+        ),
+      );
+
+      // 🚫 STOP HERE — no insert, no navigation
+      return;
+    }
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  }
+}
+
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
 
   @override
   Widget build(BuildContext context) {
@@ -210,6 +260,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     const SizedBox(
                                         height: 24),
 
+<<<<<<< HEAD
                                     TextField(
                                       controller:
                                           nameController,
@@ -221,6 +272,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                             const Icon(
                                           Icons
                                               .person_outline,
+=======
+                                    // NAME
+                                    TextField(
+                                      controller: nameController,
+                                      decoration: InputDecoration(
+                                        hintText: "Full Name",
+                                        prefixIcon: const Icon(
+                                          Icons.person_outline,
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
                                         ),
                                         filled: true,
                                         fillColor: Colors
@@ -243,6 +303,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     const SizedBox(
                                         height: 16),
 
+<<<<<<< HEAD
                                     TextField(
                                       controller:
                                           emailController,
@@ -254,6 +315,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                             const Icon(
                                           Icons
                                               .email_outlined,
+=======
+                                    // EMAIL
+                                    TextField(
+                                      controller: emailController,
+                                      decoration: InputDecoration(
+                                        hintText: "Email ID",
+                                        prefixIcon: const Icon(
+                                          Icons.email_outlined,
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
                                         ),
                                         filled: true,
                                         fillColor: Colors
@@ -276,6 +346,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     const SizedBox(
                                         height: 16),
 
+<<<<<<< HEAD
                                     TextField(
                                       controller:
                                           passwordController,
@@ -289,6 +360,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                             const Icon(
                                           Icons
                                               .lock_outline,
+=======
+                                    // PASSWORD
+                                    TextField(
+                                      controller: passwordController,
+                                      obscureText: isPasswordHidden,
+                                      decoration: InputDecoration(
+                                        hintText: "Password",
+                                        prefixIcon: const Icon(
+                                          Icons.lock_outline,
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
                                         ),
                                         suffixIcon:
                                             IconButton(
@@ -328,6 +409,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                     const SizedBox(
                                         height: 28),
 
+<<<<<<< HEAD
+=======
+                                    // SIGN UP BUTTON
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
                                     SizedBox(
                                       width: double
                                           .infinity,
@@ -349,10 +434,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                           elevation: 4,
                                         ),
+<<<<<<< HEAD
                                         onPressed:
                                             signUpUser,
                                         child:
                                             const Text(
+=======
+                                        onPressed: signUpUser,
+                                        child: const Text(
+>>>>>>> 5e0b724117ce178f51781922fa8cb0cf60260c94
                                           "Sign Up",
                                           style:
                                               TextStyle(
