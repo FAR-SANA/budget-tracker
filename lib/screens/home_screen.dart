@@ -7,6 +7,8 @@ import 'record_details_screen.dart';
 import '../models/account.dart';
 import 'profile_screen.dart';
 import 'add_record_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final supabase = Supabase.instance.client;
+
   Account? primaryAccount;
   RecordType selectedType = RecordType.income;
   List<Record> records = [];
@@ -43,13 +47,47 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (primaryAccount == null) {
-        _showAddAccountDialog();
-      }
-    });
+ loadAccount();
+ loadRecords();
   }
+Future<void> loadAccount() async {
+  final user = supabase.auth.currentUser;
+
+  if (user == null) return;
+
+  final data = await supabase
+      .from('accounts')
+      .select()
+      .eq('user_id', user.id)
+      .maybeSingle();
+      print("ACCOUNT DATA FROM DB: $data"); 
+
+  if (data != null) {
+    setState(() {
+      primaryAccount = Account.fromJson(data);
+    });
+  } else {
+    _showAddAccountDialog();
+  }
+}
+
+Future<void> loadRecords() async {
+  final user = supabase.auth.currentUser;
+  if (user == null) return;
+
+  final data = await supabase
+      .from('records')
+      .select()
+      .eq('user_id', user.id)
+      .order('record_date', ascending: false);
+
+  setState(() {
+    records = (data as List)
+        .map((json) => Record.fromJson(json))
+        .toList();
+  });
+}
+
 
   void _showAddAccountDialog() {
     final nameCtrl = TextEditingController();
@@ -126,21 +164,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
-                        return;
-                      }
+onPressed: () async {
+  if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+    return;
+  }
 
-                      setState(() {
-                        primaryAccount = Account(
-                          name: nameCtrl.text,
-                          balance: double.parse(amountCtrl.text),
-                        );
-                      });
+  try {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-                      Navigator.pop(context);
-                    },
-                    child: const Text(
+    final inserted = await supabase.from('accounts').insert({
+      'name': nameCtrl.text,
+      'balance': double.parse(amountCtrl.text),
+      'user_id': user.id,
+    }).select().single();
+
+    setState(() {
+      primaryAccount = Account.fromJson(inserted);
+    });
+
+    Navigator.pop(context);
+
+  } catch (e) {
+    print("ACCOUNT SAVE ERROR: $e");
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Error: $e")),
+  );
+  }
+},
+
+                     child: const Text(
                       "Save Account",
                       style: TextStyle(color: Colors.white),
                     ),
@@ -273,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   selectedType == RecordType.income
-                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}}"
+                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}"
                       : "Expense\n₹${totalExpense.toStringAsFixed(2)}",
                   style: const TextStyle(fontSize: 15),
                 ),
@@ -586,28 +640,41 @@ class _HomeScreenState extends State<HomeScreen> {
                                   AddRecordScreen(type: selectedType),
                             ),
                           );
-                          if (result != null) {
-                            setState(() => records.add(result));
+                 if (result != null) {
+  final user = supabase.auth.currentUser;
+if (user == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("User not logged in")),
+  );
+  return;
+}
 
-                            // ✅ confirmation message
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                  "Record added successfully",
-                                ),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                backgroundColor: const Color(0xFF142752),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          }
+  await supabase.from('records').insert({
+  'title': result.title,
+  'amount': result.amount,
+  'record_date': result.date.toString().split(' ')[0],
+  'record_type': result.type.name,
+  'category_id': result.category,
+  'account_id': primaryAccount?.id,
+  'user_id': user.id,
+});
+
+  await loadRecords();
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: const Text("Record added successfully"),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      backgroundColor: const Color(0xFF142752),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  );
+}
+
                         },
                       ),
 

@@ -17,34 +17,55 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _loading = false;
+Future<void> _login() async {
+  setState(() => _loading = true);
 
-  Future<void> _login() async {
-    setState(() => _loading = true);
+  try {
+    final response = await Supabase.instance.client.auth.signInWithPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
-    try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+    final user = response.user;
 
-      if (response.user != null && mounted) {
+    if (user != null) {
+      final supabase = Supabase.instance.client;
+
+      // 🔥 Check if profile already exists
+      final existing = await supabase
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      // 🔥 If profile does NOT exist → create it
+      if (existing == null) {
+        await supabase.from('users').insert({
+          'id': user.id,
+          'name': user.userMetadata?['name'] ?? '',
+          'email': user.email,
+        });
+      }
+
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         );
       }
-    } on AuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
-    } finally {
-      setState(() => _loading = false);
     }
+  } on AuthException catch (e) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(e.message)));
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
+  } finally {
+    setState(() => _loading = false);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

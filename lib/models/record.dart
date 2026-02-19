@@ -19,4 +19,24 @@ class Record {
     required this.category,
     this.repeatType,
   });
+factory Record.fromJson(Map<String, dynamic> json) {
+  return Record(
+    title: json['title'] ?? '',
+
+    amount: (json['amount'] ?? 0).toDouble(),
+
+    date: json['record_date'] != null
+        ? DateTime.parse(json['record_date'])
+        : DateTime.now(),
+
+    type: json['record_type'] == 'income'
+        ? RecordType.income
+        : RecordType.expense,
+
+    category: json['category_id']?.toString() ?? '',
+
+    repeatType: json['repeat_type'],
+  );
+}
+
 }

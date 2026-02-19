@@ -22,40 +22,35 @@ class _SignupScreenState extends State<SignupScreen> {
   final supabase = Supabase.instance.client;
 
   // ✅ SIGN UP FUNCTION
- Future<void> signUpUser() async {
+Future<void> signUpUser() async {
   try {
     final response = await supabase.auth.signUp(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
+      data: {
+        'name': nameController.text.trim(),
+      },
     );
 
-    final user = response.user;
-    final session = response.session;
+    if (!mounted) return;
 
-    if (user == null) {
-      throw 'Signup failed. Try again.';
-    }
-
-    // ✅ Email confirmation required
-    if (session == null) {
+    if (response.user != null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Account created! Please verify your email before logging in.",
-          ),
-        ),
+        const SnackBar(content: Text("Account created successfully!")),
       );
 
-      // 🚫 STOP HERE — no insert, no navigation
-      return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     }
-  } on AuthException catch (e) {
+  } on AuthException catch (error) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.message)),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
+      SnackBar(content: Text(error.message)),
     );
   }
 }
