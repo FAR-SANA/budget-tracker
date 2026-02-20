@@ -47,10 +47,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // ================= SAVE PROFILE =================
-  Future<void> _saveProfile() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return;
+Future<void> _saveProfile() async {
+  final user = _supabase.auth.currentUser;
+  if (user == null) return;
 
+  try {
     // 🔐 Update email (Auth)
     if (emailCtrl.text.trim() != user.email) {
       await _supabase.auth.updateUser(
@@ -58,12 +59,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
 
-    // 👤 Update profile (Database)
-    await _supabase.from('users').update({
+    // 🧠 Build update map safely
+    final updates = {
       'name': nameCtrl.text.trim(),
-      'gender': gender,
-      'dob': dobCtrl.text.isEmpty ? null : _parseDate(dobCtrl.text),
-    }).eq('id', user.id);
+      'gender': gender, // can be null
+    };
+
+    if (dobCtrl.text.isNotEmpty) {
+      updates['dob'] =
+          _parseDate(dobCtrl.text).toIso8601String(); // 🔥 important
+    } else {
+      updates['dob'] = null;
+    }
+
+    // 👤 Update database
+    await _supabase
+        .from('users')
+        .update(updates)
+        .eq('id', user.id);
 
     if (!mounted) return;
 
@@ -72,7 +85,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     Navigator.pop(context);
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error updating profile: $e")),
+    );
   }
+}
 
   DateTime _parseDate(String value) {
     final parts = value.split('/');

@@ -32,10 +32,14 @@ Future<void> signUpUser() async {
       },
     );
 
-    if (!mounted) return;
-
     if (response.user != null) {
-      ScaffoldMessenger.of(context).clearSnackBars();
+      await supabase.from('users').insert({
+        'id': response.user!.id,
+        'name': nameController.text.trim(),
+      });
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Account created successfully!")),
       );
@@ -48,12 +52,12 @@ Future<void> signUpUser() async {
   } on AuthException catch (error) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(error.message)),
     );
   }
 }
+
 
 
   @override
