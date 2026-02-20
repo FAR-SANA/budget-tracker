@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'forgot_password_screen.dart'; // ✅ ADD THIS
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -19,19 +21,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool hasNumber = false;
   bool hasSpecial = false;
 
-  bool get isValid =>
-      hasMinLength &&
-      hasUpper &&
-      hasLower &&
-      hasNumber &&
-      hasSpecial &&
-      newCtrl.text == confirmCtrl.text &&
-      newCtrl.text.isNotEmpty;
+bool get isValid =>
+    currentCtrl.text.isNotEmpty &&
+    hasMinLength &&
+    hasUpper &&
+    hasLower &&
+    hasNumber &&
+    hasSpecial &&
+    newCtrl.text == confirmCtrl.text &&
+    newCtrl.text.isNotEmpty;
+
 
   @override
   void initState() {
     super.initState();
     newCtrl.addListener(_validatePassword);
+      // 🔥 ADD THIS
+  confirmCtrl.addListener(() {
+    setState(() {});
+  });
   }
 
   void _validatePassword() {
@@ -218,20 +226,53 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ),
     );
   }
+Future<void> _save() async {
+  final supabase = Supabase.instance.client;
 
-  void _save() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Password Updated")));
+  if (!mounted) return;
+
+  try {
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User not logged in")),
+      );
+      return;
+    }
+
+    // 🔐 Step 1: Reauthenticate
+    await supabase.auth.signInWithPassword(
+      email: user.email!,
+      password: currentCtrl.text.trim(),
+    );
+
+    // 🔐 Step 2: Update password
+    await supabase.auth.updateUser(
+      UserAttributes(password: newCtrl.text.trim()),
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Password updated successfully")),
+    );
 
     Navigator.pop(context);
-  }
 
-  @override
-  void dispose() {
-    currentCtrl.dispose();
-    newCtrl.dispose();
-    confirmCtrl.dispose();
-    super.dispose();
+  } on AuthException catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message)),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Something went wrong")),
+    );
   }
+}
+
 }
