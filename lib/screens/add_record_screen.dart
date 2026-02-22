@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecordScreen extends StatefulWidget {
   final RecordType type;
@@ -16,8 +17,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   final amountCtrl = TextEditingController();
   final dateCtrl = TextEditingController();
 
-  late RecordType selectedType;
-  String? selectedCategory;
+  late RecordType selectedType; // UUID for database
+String? selectedCategory;     // name for UI
   String? repeatType; // null = Never
   DateTime? selectedDate;
 
@@ -26,7 +27,6 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     super.initState();
     selectedType = widget.type;
   }
-
   @override
   @override
   Widget build(BuildContext context) {
@@ -255,96 +255,98 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     );
   }
 
-  void _showCategorySheet() {
-    final categories = [
-      "miscellaneous",
-      "entertainment",
-      "household",
-      "transport",
-      "shopping",
-      "education",
-      "health",
-      "salary",
-      "food",
-      "rewards",
-    ];
+void _showCategorySheet() {
+  final categories = [
+    "miscellaneous",
+    "entertainment",
+    "household",
+    "transport",
+    "shopping",
+    "education",
+    "health",
+    "salary",
+    "food",
+  ];
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) {
-        return Stack(
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(color: Colors.transparent),
-            ),
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  width: 320,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black26, blurRadius: 10),
-                    ],
-                  ),
-                  child: SizedBox(
-                    height: 280,
-                    child: GridView.builder(
-                      itemCount: categories.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                          ),
-                      itemBuilder: (_, index) {
-                        final name = categories[index];
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => selectedCategory = name);
-                            Navigator.pop(context);
-                          },
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 26,
-                                backgroundColor: Colors.indigo,
-                                child: Image.asset(
-                                  "assets/icons/categories/$name.png",
-                                  width: 28,
-                                  height: 28,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) {
+      return Stack(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(color: Colors.transparent),
+          ),
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 320,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 10),
+                  ],
+                ),
+                child: SizedBox(
+                  height: 280,
+                  child: GridView.builder(
+                    itemCount: categories.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
                     ),
+                    itemBuilder: (_, index) {
+                      final name = categories[index];
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedCategory = name;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.indigo,
+                              child: Image.asset(
+                                "assets/icons/categories/$name.png",
+                                width: 28,
+                                height: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
+        ],
+      );
+    },
+  );
+}
 
   // ================= REPEAT =================
   Widget _repeatButton() {
@@ -495,19 +497,57 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     );
   }
 
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
+Future<void> _save() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    final record = Record(
-      title: titleCtrl.text,
-      amount: double.parse(amountCtrl.text),
-      date: selectedDate!,
-      type: selectedType,
-      category: selectedCategory ?? "miscellaneous",
+  if (selectedDate == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select a date")),
+    );
+    return;
+  }
+
+  if (selectedCategory == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select a category")),
+    );
+    return;
+  }
+
+  final supabase = Supabase.instance.client;
+  final user = supabase.auth.currentUser;
+
+  if (user == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("User not logged in")),
+    );
+    return;
+  }
+
+  try {
+    await supabase.from('records').insert({
+      'user_id': user.id,
+      'title': titleCtrl.text.trim(),
+      'amount': double.parse(amountCtrl.text),
+      'record_type': selectedType.name,
+      'record_date': selectedDate!.toIso8601String(),
+      'is_recurring': repeatType != null,
+      'account_id': null,
+      'category_name': selectedCategory,
+      'budget_id': null,
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Record saved successfully")),
     );
 
-    Navigator.pop(context, record);
+    Navigator.pop(context);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
   }
+}
 }
 
 class _NoGlowScrollBehavior extends ScrollBehavior {

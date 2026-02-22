@@ -77,7 +77,7 @@ Future<void> loadRecords() async {
 
   final data = await supabase
       .from('records')
-      .select()
+      .select() // ✅ no join
       .eq('user_id', user.id)
       .order('record_date', ascending: false);
 
@@ -87,7 +87,6 @@ Future<void> loadRecords() async {
         .toList();
   });
 }
-
 
   void _showAddAccountDialog() {
     final nameCtrl = TextEditingController();
@@ -649,12 +648,12 @@ if (user == null) {
   return;
 }
 
-  await supabase.from('records').insert({
+ await supabase.from('records').insert({
   'title': result.title,
   'amount': result.amount,
-  'record_date': result.date.toString().split(' ')[0],
+  'record_date': result.date.toIso8601String(),
   'record_type': result.type.name,
-  'category_id': result.category,
+  'category_name': result.category, // ✅ correct
   'account_id': primaryAccount?.id,
   'user_id': user.id,
 });
