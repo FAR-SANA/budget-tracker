@@ -22,27 +22,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Account? primaryAccount;
   RecordType selectedType = RecordType.income;
-  List<Record> records = [];
+  List<Record> dayRecords = [];       // ✅ list + chart (only selected day)
+List<Record> uptoRecords = [];      // ✅ used only for balance totals
+
+double incomeUpToDate = 0;
+double expenseUpToDate = 0;
 
   DateTime selectedDate = DateTime.now();
   int touchedIndex = -1;
 
-  double get totalIncome => records
-      .where(
-        (r) => r.type == RecordType.income && _isSameDay(r.date, selectedDate),
-      )
-      .fold(0, (sum, r) => sum + r.amount);
+ // ✅ for list + chart (only selected day)
+double get dayIncome => dayRecords
+    .where((r) => r.type == RecordType.income)
+    .fold(0, (sum, r) => sum + r.amount);
 
-  double get totalExpense => records
-      .where(
-        (r) => r.type == RecordType.expense && _isSameDay(r.date, selectedDate),
-      )
-      .fold(0, (sum, r) => sum + r.amount);
+double get dayExpense => dayRecords
+    .where((r) => r.type == RecordType.expense)
+    .fold(0, (sum, r) => sum + r.amount);
 
-  double get balance {
-    final baseBalance = primaryAccount?.balance ?? 0;
-    return baseBalance + totalIncome - totalExpense;
-  }
+// ✅ totals upto selectedDate
+double get totalIncome => incomeUpToDate;
+double get totalExpense => expenseUpToDate;
+
+// ✅ balance upto selectedDate
+double get balance {
+  final baseBalance = primaryAccount?.balance ?? 0; // opening balance
+  return baseBalance + totalIncome - totalExpense;
+}
 
   @override
   void initState() {
@@ -50,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
  loadAccount();
  loadRecords();
   }
+  String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
 Future<void> loadAccount() async {
   final user = supabase.auth.currentUser;
 
@@ -75,16 +82,46 @@ Future<void> loadRecords() async {
   final user = supabase.auth.currentUser;
   if (user == null) return;
 
-  final data = await supabase
+  final dateStr = _toPgDate(selectedDate);
+
+  // ✅ A) Only this day (for chart/list)
+  final dayData = await supabase
       .from('records')
-      .select() // ✅ no join
+      .select()
       .eq('user_id', user.id)
+      .eq('record_date', dateStr)
       .order('record_date', ascending: false);
 
+  final dayList =
+      (dayData as List).map((json) => Record.fromJson(json)).toList();
+
+  // ✅ B) Up to this day (for balance)
+  final uptoData = await supabase
+      .from('records')
+      .select()
+      .eq('user_id', user.id)
+      .lte('record_date', dateStr)
+      .order('record_date', ascending: false);
+
+  final uptoList =
+      (uptoData as List).map((json) => Record.fromJson(json)).toList();
+
+  double inc = 0;
+  double exp = 0;
+
+  for (final r in uptoList) {
+    if (r.type == RecordType.income) {
+      inc += r.amount;
+    } else {
+      exp += r.amount;
+    }
+  }
+
   setState(() {
-    records = (data as List)
-        .map((json) => Record.fromJson(json))
-        .toList();
+    dayRecords = dayList;
+    uptoRecords = uptoList;
+    incomeUpToDate = inc;
+    expenseUpToDate = exp;
   });
 }
 
@@ -209,11 +246,8 @@ onPressed: () async {
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecords = records
-        .where(
-          (r) => r.type == selectedType && _isSameDay(r.date, selectedDate),
-        )
-        .toList();
+    final filteredRecords =
+    dayRecords.where((r) => r.type == selectedType).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -325,11 +359,11 @@ onPressed: () async {
                   style: const TextStyle(fontSize: 15),
                 ),
                 Text(
-                  selectedType == RecordType.income
-                      ? "Income\n₹${totalIncome.toStringAsFixed(2)}"
-                      : "Expense\n₹${totalExpense.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 15),
-                ),
+  selectedType == RecordType.income
+      ? "Income\n₹${dayIncome.toStringAsFixed(2)}"
+      : "Expense\n₹${dayExpense.toStringAsFixed(2)}",
+  style: const TextStyle(fontSize: 15),
+),
               ],
             ),
           ],
@@ -347,10 +381,11 @@ onPressed: () async {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left),
-          onPressed: () {
+          onPressed: () async {
             setState(() {
               selectedDate = selectedDate.subtract(const Duration(days: 1));
             });
+              await loadRecords();
           },
         ),
         Text(
@@ -363,10 +398,11 @@ onPressed: () async {
               selectedDate.isBefore(
                 DateTime(today.year, today.month, today.day),
               )
-              ? () {
+              ? () async {
                   setState(() {
                     selectedDate = selectedDate.add(const Duration(days: 1));
                   });
+                   await loadRecords();
                 }
               : null,
         ),
@@ -470,23 +506,18 @@ onPressed: () async {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () async {
-              final updated = await Navigator.push<Record>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RecordDetailsScreen(record: r),
-                ),
-              );
+           onTap: () async {
+  final changed = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RecordDetailsScreen(record: r),
+    ),
+  );
 
-              if (updated != null) {
-                setState(() {
-                  final index = records.indexOf(r);
-                  if (index != -1) {
-                    records[index] = updated;
-                  }
-                });
-              }
-            },
+  if (changed == true) {
+    await loadRecords(); // ✅ refresh list from DB
+  }
+},
 
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
@@ -630,51 +661,20 @@ onPressed: () async {
                       ListTile(
                         leading: const Icon(Icons.edit),
                         title: const Text("Text"),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          final result = await Navigator.push<Record>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  AddRecordScreen(type: selectedType),
-                            ),
-                          );
-                 if (result != null) {
-  final user = supabase.auth.currentUser;
-if (user == null) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("User not logged in")),
-  );
-  return;
-}
+                      onTap: () async {
+  Navigator.pop(context);
 
- await supabase.from('records').insert({
-  'title': result.title,
-  'amount': result.amount,
-  'record_date': result.date.toIso8601String(),
-  'record_type': result.type.name,
-  'category_name': result.category, // ✅ correct
-  'account_id': primaryAccount?.id,
-  'user_id': user.id,
-});
-
-  await loadRecords();
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: const Text("Record added successfully"),
-      duration: const Duration(seconds: 2),
-      behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      backgroundColor: const Color(0xFF142752),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+  final changed = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AddRecordScreen(type: selectedType),
     ),
   );
-}
 
-                        },
+  if (changed == true) {
+    await loadRecords();
+  }
+},
                       ),
 
                       const Divider(height: 0),
@@ -789,9 +789,7 @@ if (user == null) {
     );
   }
 
-  // ---------------- HELPERS ----------------
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
+
 
   String _formatDate(DateTime d) {
     const months = [

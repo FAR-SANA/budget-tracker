@@ -121,14 +121,11 @@ Future<void> loadUserData() async {
                    style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFFB300),
+                        color: Color.fromRGBO(255, 179, 0, 1),
                       ),
                     ),
                     SizedBox(height: 4),
-                    Text(
-                      "User ID: $userId",
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    
                   ],
                 ),
               ],

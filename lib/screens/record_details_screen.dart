@@ -178,18 +178,20 @@ class RecordDetailsScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final updated = await Navigator.push<Record>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditRecordScreen(record: record),
-                      ),
-                    );
+               onPressed: () async {
+  final updated = await Navigator.push<Record?>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => EditRecordScreen(record: record),
+    ),
+  );
 
-                    if (updated != null) {
-                      Navigator.pop(context, updated);
-                    }
-                  },
+  if (!context.mounted) return; // ✅ prevents async context issue
+
+  if (updated != null) {
+    Navigator.pop(context, true); // ✅ tell Home "record changed"
+  }
+},
                   icon: const Icon(Icons.edit, color: Colors.white),
                   label: const Text(
                     "Edit Record",

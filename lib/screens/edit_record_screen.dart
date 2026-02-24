@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditRecordScreen extends StatefulWidget {
   final Record record;
@@ -233,8 +234,10 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     );
   }
 
-  Widget _categoryButton() {
-    return Container(
+Widget _categoryButton() {
+  return InkWell(
+    onTap: _showCategorySheet, // ✅ you must create this function
+    child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFE3EBFD),
@@ -253,22 +256,112 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
           Expanded(
             child: Text(
               selectedCategory ?? "Category",
-              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: selectedCategory == null ? Colors.grey : Colors.black,
-                fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Icon(Icons.keyboard_arrow_down),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showCategorySheet() {
+  final categories = [
+    "miscellaneous",
+    "entertainment",
+    "household",
+    "transport",
+    "shopping",
+    "education",
+    "health",
+    "salary",
+    "food",
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) {
+      return Stack(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(color: Colors.transparent),
+          ),
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 320,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 10),
+                  ],
+                ),
+                child: SizedBox(
+                  height: 280,
+                  child: GridView.builder(
+                    itemCount: categories.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                    ),
+                    itemBuilder: (_, index) {
+                      final name = categories[index];
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedCategory = name;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.indigo,
+                              child: Image.asset(
+                                "assets/icons/categories/$name.png",
+                                width: 28,
+                                height: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-          const Icon(Icons.keyboard_arrow_down, size: 20),
         ],
-      ),
-    );
-  }
-
-  Widget _repeatButton() {
-    return Container(
+      );
+    },
+  );
+}
+Widget _repeatButton() {
+  return InkWell(
+    onTap: _showRepeatSheet, // ✅ you must create this function
+    child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFE3EBFD),
@@ -276,35 +369,56 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: repeatType == null
-                  ? Colors.transparent
-                  : Colors.indigo.withOpacity(0.15),
-            ),
-            child: Icon(
-              repeatType == null
-                  ? Icons.radio_button_unchecked
-                  : Icons.check_circle,
-              size: 20,
-              color: const Color(0xFF142752),
-            ),
+          Icon(
+            repeatType == null ? Icons.radio_button_unchecked : Icons.check_circle,
+            color: const Color(0xFF142752),
           ),
           const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              repeatType ?? "Repeat",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Expanded(child: Text(repeatType ?? "Repeat")),
+          const Icon(Icons.keyboard_arrow_down),
         ],
       ),
+    ),
+  );
+}
+
+  void _showRepeatSheet() {
+    final options = ["Never", "Daily", "Weekly", "Monthly", "Yearly"];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Center(
+          child: Container(
+            width: 280,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 10),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: options.map((o) {
+                return RadioListTile<String?>(
+                  title: Text(o),
+                  value: o == "Never" ? null : o,
+                  groupValue: repeatType,
+                  onChanged: (val) {
+                    setState(() => repeatType = val);
+                    Navigator.pop(context);
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
-
   Widget _budgetButton() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -349,19 +463,45 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
       ],
     );
   }
+Future<void> _save() async {
+  if (!_formKey.currentState!.validate()) return;
 
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
+  final supabase = Supabase.instance.client;
+  final user = supabase.auth.currentUser;
+  if (user == null) return;
 
-    final updated = Record(
-      title: titleCtrl.text,
+  try {
+    await supabase
+        .from('records')
+        .update({
+          'title': titleCtrl.text.trim(),
+          'amount': double.parse(amountCtrl.text),
+          'record_date': selectedDate.toIso8601String().split('T').first,
+          'record_type': selectedType.name,
+          'category_name': selectedCategory,
+          'is_recurring': repeatType != null,
+                  })
+        .eq('record_id', widget.record.id)
+        .eq('user_id', user.id);
+
+    // ✅ build updated record and return it
+    final updatedRecord = Record(
+      id: widget.record.id,
+      title: titleCtrl.text.trim(),
       amount: double.parse(amountCtrl.text),
       date: selectedDate,
       type: selectedType,
       category: selectedCategory ?? "miscellaneous",
-      repeatType: repeatType,
     );
 
-    Navigator.pop(context, updated);
+    if (!mounted) return;
+    Navigator.pop(context, updatedRecord); // ✅ return Record
+
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
   }
+}
 }

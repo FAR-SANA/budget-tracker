@@ -27,7 +27,7 @@ String? selectedCategory;     // name for UI
     super.initState();
     selectedType = widget.type;
   }
-  @override
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -497,6 +497,24 @@ void _showCategorySheet() {
     );
   }
 
+String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
+
+String? _mapRepeatToFrequency(String? repeatType) {
+  if (repeatType == null) return null;
+  switch (repeatType) {
+    case "Daily":
+      return "daily";
+    case "Weekly":
+      return "weekly";
+    case "Monthly":
+      return "monthly";
+    case "Yearly":
+      return "yearly";
+    default:
+      return null;
+  }
+}
+
 Future<void> _save() async {
   if (!_formKey.currentState!.validate()) return;
 
@@ -524,26 +542,81 @@ Future<void> _save() async {
     return;
   }
 
+  final dateStr = _toPgDate(selectedDate!);
+  final frequency = _mapRepeatToFrequency(repeatType);
+
   try {
+    // ✅ NO REPEAT → normal record
+    if (frequency == null) {
+      await supabase.from('records').insert({
+        'user_id': user.id,
+        'title': titleCtrl.text.trim(),
+        'amount': double.parse(amountCtrl.text),
+        'record_type': selectedType.name,
+        'record_date': dateStr,        // ✅ DATE
+        'is_recurring': false,
+        'account_id': null,
+        'category_name': selectedCategory,
+        'budget_id': null,
+        'recurring_rule_id': null,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Record saved successfully")),
+      );
+
+      Navigator.pop(context, true); // ✅ tell Home refresh
+      return;
+    }
+
+    // ✅ REPEAT → create recurring rule
+    final byweekday = (frequency == "weekly") ? [selectedDate!.weekday] : null;
+    final bymonthday = (frequency == "monthly") ? selectedDate!.day : null;
+final rule = await supabase
+    .from('recurring_rules')
+    .insert({
+      'user_id': user.id,
+      'account_id': null,
+      'budget_id': null,
+      'title': titleCtrl.text.trim(),
+      'amount': double.parse(amountCtrl.text),
+      'record_type': selectedType.name,
+      'category_name': selectedCategory,
+      'frequency': frequency,
+      'interval': 1,
+      'byweekday': byweekday,
+      'bymonthday': bymonthday,
+      'start_date': dateStr,
+      'next_run_date': dateStr,
+      'is_active': true,
+    })
+    .select('rule_id')
+    .single();
+
+final ruleId = rule['rule_id'];
+
+    // ✅ Optional: insert first occurrence now so user sees it immediately
     await supabase.from('records').insert({
       'user_id': user.id,
       'title': titleCtrl.text.trim(),
       'amount': double.parse(amountCtrl.text),
       'record_type': selectedType.name,
-      'record_date': selectedDate!.toIso8601String(),
-      'is_recurring': repeatType != null,
+      'record_date': dateStr,
+      'is_recurring': true,
       'account_id': null,
       'category_name': selectedCategory,
       'budget_id': null,
+      'recurring_rule_id': ruleId,
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Record saved successfully")),
+      const SnackBar(content: Text("Recurring rule created ✅")),
     );
 
-    Navigator.pop(context);
+    Navigator.pop(context, true); // ✅ tell Home refresh
+
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
+   ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Error: $e")),
     );
   }
