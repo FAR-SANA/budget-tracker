@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
-import 'screens/login_screen.dart';
+import 'package:flutter/services.dart';
 import 'screens/welcome_screen.dart'; // ✅ ADDED
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
 
   await NotificationService.init();
 
