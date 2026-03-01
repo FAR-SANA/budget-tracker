@@ -51,55 +51,65 @@ double get balance {
 }
 
   @override
-  void initState() {
-    super.initState();
- loadAccount();
- loadRecords();
+void initState() {
+  super.initState();
+  _initialize();
+}
+Future<void> _initialize() async {
+  await loadAccount();
+
+  if (primaryAccount != null) {
+    await loadRecords();
   }
+}
   String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
 Future<void> loadAccount() async {
   final user = supabase.auth.currentUser;
-
   if (user == null) return;
 
   final data = await supabase
       .from('accounts')
       .select()
       .eq('user_id', user.id)
-      .maybeSingle();
-      print("ACCOUNT DATA FROM DB: $data"); 
+      .order('created_at', ascending: true);
 
-  if (data != null) {
-    setState(() {
-      primaryAccount = Account.fromJson(data);
-    });
-  } else {
+  if ((data as List).isEmpty){
     _showAddAccountDialog();
+    return;
   }
+
+  final accounts =
+      (data as List).map((e) => Account.fromJson(e)).toList();
+
+  setState(() {
+  primaryAccount = primaryAccount ?? accounts.first;
+});
 }
 
 Future<void> loadRecords() async {
   final user = supabase.auth.currentUser;
-  if (user == null) return;
 
+  if (user == null || primaryAccount == null) return;
+
+  final accountId = primaryAccount!.id!;
   final dateStr = _toPgDate(selectedDate);
 
-  // ✅ A) Only this day (for chart/list)
   final dayData = await supabase
       .from('records')
       .select()
       .eq('user_id', user.id)
-      .eq('record_date', dateStr)
+      .eq('account_id', accountId)
+    .eq('record_date', dateStr)
       .order('record_date', ascending: false);
 
   final dayList =
       (dayData as List).map((json) => Record.fromJson(json)).toList();
 
-  // ✅ B) Up to this day (for balance)
   final uptoData = await supabase
       .from('records')
       .select()
       .eq('user_id', user.id)
+      .eq('account_id', accountId)
       .lte('record_date', dateStr)
       .order('record_date', ascending: false);
 
@@ -123,6 +133,7 @@ Future<void> loadRecords() async {
     incomeUpToDate = inc;
     expenseUpToDate = exp;
   });
+
 }
 
   void _showAddAccountDialog() {
@@ -661,17 +672,27 @@ onPressed: () async {
                       ListTile(
                         leading: const Icon(Icons.edit),
                         title: const Text("Text"),
-                      onTap: () async {
+    onTap: () async {
   Navigator.pop(context);
 
-  final changed = await Navigator.push<bool>(
+  final selectedAccountId = await Navigator.push<String?>(
     context,
     MaterialPageRoute(
       builder: (_) => AddRecordScreen(type: selectedType),
     ),
   );
 
-  if (changed == true) {
+  if (selectedAccountId != null) {
+    final data = await supabase
+        .from('accounts')
+        .select()
+        .eq('account_id', selectedAccountId)
+        .single();
+
+    setState(() {
+      primaryAccount = Account.fromJson(data);
+    });
+
     await loadRecords();
   }
 },

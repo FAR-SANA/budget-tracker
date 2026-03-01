@@ -21,7 +21,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 String? selectedCategory;     // name for UI
   String? repeatType; // null = Never
   DateTime? selectedDate;
-
+String? selectedAccountId;
+String? selectedAccountName;
   @override
   void initState() {
     super.initState();
@@ -65,7 +66,7 @@ String? selectedCategory;     // name for UI
                   _dateField(),
                   const SizedBox(height: 15),
 
-                  _primaryButton("Select account"),
+                  _accountButton(),
                   const SizedBox(height: 20),
 
                   Row(
@@ -426,8 +427,11 @@ void _showCategorySheet() {
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
 
-  Widget _primaryButton(String text) {
-    return Container(
+ 
+Widget _accountButton() {
+  return InkWell(
+    onTap: _showAccountSheet,
+    child: Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -438,7 +442,7 @@ void _showCategorySheet() {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            text,
+            selectedAccountName ?? "Select account",
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -446,12 +450,48 @@ void _showCategorySheet() {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 22),
+          const Icon(Icons.keyboard_arrow_down,
+              color: Colors.white, size: 22),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
+Future<void> _showAccountSheet() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  final accounts = await Supabase.instance.client
+      .from('accounts')
+      .select()
+      .eq('user_id', user.id);
+
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: accounts.map<Widget>((acc) {
+          return ListTile(
+            title: Text(acc['name']),
+            subtitle: Text("₹${acc['balance']}"),
+            onTap: () {
+              setState(() {
+                selectedAccountId = acc['account_id'];
+                selectedAccountName = acc['name'];
+              });
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      );
+    },
+  );
+}
   Widget _linkBudgetButton() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -517,7 +557,12 @@ String? _mapRepeatToFrequency(String? repeatType) {
 
 Future<void> _save() async {
   if (!_formKey.currentState!.validate()) return;
-
+if (selectedAccountId == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Please select an account")),
+  );
+  return;
+}
   if (selectedDate == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Please select a date")),
@@ -544,77 +589,118 @@ Future<void> _save() async {
 
   final dateStr = _toPgDate(selectedDate!);
   final frequency = _mapRepeatToFrequency(repeatType);
+  final amount = double.parse(amountCtrl.text);
+if (selectedType == RecordType.expense) {
+  final accountData = await supabase
+      .from('accounts')
+      .select('balance')
+      .eq('account_id', selectedAccountId!) // 👈 add !
+      .single();
+
+  double currentBalance =
+      (accountData['balance'] ?? 0).toDouble();
+
+  if (amount > currentBalance) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Insufficient balance")),
+    );
+    return;
+  }
+}
 
   try {
-    // ✅ NO REPEAT → normal record
     if (frequency == null) {
-      await supabase.from('records').insert({
-        'user_id': user.id,
-        'title': titleCtrl.text.trim(),
-        'amount': double.parse(amountCtrl.text),
-        'record_type': selectedType.name,
-        'record_date': dateStr,        // ✅ DATE
-        'is_recurring': false,
-        'account_id': null,
-        'category_name': selectedCategory,
-        'budget_id': null,
-        'recurring_rule_id': null,
-      });
+  // ================= NORMAL RECORD =================
+  await supabase.from('records').insert({
+    'user_id': user.id,
+    'account_id': selectedAccountId,
+    'title': titleCtrl.text.trim(),
+    'amount': amount,
+    'record_type': selectedType.name,
+    'record_date': dateStr,
+    'is_recurring': false,
+    'category_name': selectedCategory,
+    'budget_id': null,
+    'recurring_rule_id': null,
+  });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Record saved successfully")),
-      );
-
-      Navigator.pop(context, true); // ✅ tell Home refresh
-      return;
-    }
-
-    // ✅ REPEAT → create recurring rule
-    final byweekday = (frequency == "weekly") ? [selectedDate!.weekday] : null;
-    final bymonthday = (frequency == "monthly") ? selectedDate!.day : null;
-final rule = await supabase
-    .from('recurring_rules')
-    .insert({
-      'user_id': user.id,
-      'account_id': null,
-      'budget_id': null,
-      'title': titleCtrl.text.trim(),
-      'amount': double.parse(amountCtrl.text),
-      'record_type': selectedType.name,
-      'category_name': selectedCategory,
-      'frequency': frequency,
-      'interval': 1,
-      'byweekday': byweekday,
-      'bymonthday': bymonthday,
-      'start_date': dateStr,
-      'next_run_date': dateStr,
-      'is_active': true,
-    })
-    .select('rule_id')
-    .single();
-
-final ruleId = rule['rule_id'];
-
-    // ✅ Optional: insert first occurrence now so user sees it immediately
-    await supabase.from('records').insert({
-      'user_id': user.id,
-      'title': titleCtrl.text.trim(),
-      'amount': double.parse(amountCtrl.text),
-      'record_type': selectedType.name,
-      'record_date': dateStr,
-      'is_recurring': true,
-      'account_id': null,
-      'category_name': selectedCategory,
-      'budget_id': null,
-      'recurring_rule_id': ruleId,
+  // Update balance
+  if (selectedType == RecordType.income) {
+    await supabase.rpc('increment_balance', params: {
+      'acc_id': selectedAccountId,
+      'amount_val': amount,
     });
+  } else {
+    await supabase.rpc('decrement_balance', params: {
+      'acc_id': selectedAccountId,
+      'amount_val': amount,
+    });
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Recurring rule created ✅")),
-    );
+} else {
+  // ================= RECURRING RECORD =================
+  final byweekday =
+      (frequency == "weekly") ? [selectedDate!.weekday] : null;
 
-    Navigator.pop(context, true); // ✅ tell Home refresh
+  final bymonthday =
+      (frequency == "monthly") ? selectedDate!.day : null;
 
+  final rule = await supabase
+      .from('recurring_rules')
+      .insert({
+        'user_id': user.id,
+        'account_id': selectedAccountId, // ✅ FIX HERE
+        'budget_id': null,
+        'title': titleCtrl.text.trim(),
+        'amount': amount,
+        'record_type': selectedType.name,
+        'category_name': selectedCategory,
+        'frequency': frequency,
+        'interval': 1,
+        'byweekday': byweekday,
+        'bymonthday': bymonthday,
+        'start_date': dateStr,
+        'next_run_date': dateStr,
+        'is_active': true,
+      })
+      .select('rule_id')
+      .single();
+
+  final ruleId = rule['rule_id'];
+
+  await supabase.from('records').insert({
+    'user_id': user.id,
+    'account_id': selectedAccountId, // ✅ FIX HERE
+    'title': titleCtrl.text.trim(),
+    'amount': amount,
+    'record_type': selectedType.name,
+    'record_date': dateStr,
+    'is_recurring': true,
+    'category_name': selectedCategory,
+    'budget_id': null,
+    'recurring_rule_id': ruleId,
+  });
+
+  // Update balance
+  if (selectedType == RecordType.income) {
+    await supabase.rpc('increment_balance', params: {
+      'acc_id': selectedAccountId,
+      'amount_val': amount,
+    });
+  } else {
+    await supabase.rpc('decrement_balance', params: {
+      'acc_id': selectedAccountId,
+      'amount_val': amount,
+    });
+  }
+}
+
+ScaffoldMessenger.of(context).showSnackBar(
+  const SnackBar(content: Text("Record saved successfully")),
+);
+
+Navigator.pop(context, selectedAccountId);
   } catch (e) {
    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Error: $e")),

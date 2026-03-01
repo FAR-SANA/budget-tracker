@@ -3,7 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'screens/welcome_screen.dart'; // ✅ ADDED
+import 'screens/setnewpass.dart';
 
+
+final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,6 +22,18 @@ void main() async {
   );
 
   runApp(const BudgeeApp());
+Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+  final event = data.event;
+
+  if (event == AuthChangeEvent.passwordRecovery) {
+    navKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const SetNewPasswordScreen(),
+      ),
+      (route) => false,
+    );
+  }
+});
 }
 
 class BudgeeApp extends StatelessWidget {
@@ -27,6 +42,7 @@ class BudgeeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+       navigatorKey: navKey,
       debugShowCheckedModeBanner: false,
       title: 'Budgee',
 

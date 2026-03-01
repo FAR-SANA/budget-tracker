@@ -23,7 +23,7 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   String? selectedCategory;
   String? repeatType;
   late DateTime selectedDate;
-
+String? selectedAccountId;
   @override
   void initState() {
     super.initState();
@@ -42,6 +42,7 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     selectedCategory = widget.record.category;
     repeatType = widget.record.repeatType;
     selectedDate = widget.record.date;
+    selectedAccountId = widget.record.accountId;
   }
 
   @override
@@ -471,31 +472,61 @@ Future<void> _save() async {
   if (user == null) return;
 
   try {
+    // 🔥 1️⃣ Get old record from database
+    final oldRecord = await supabase
+        .from('records')
+        .select()
+        .eq('record_id', widget.record.id)
+        .single();
+
+    final oldAmount = (oldRecord['amount'] as num).toDouble();
+    final oldType = oldRecord['record_type'];
+    final accountId = oldRecord['account_id'];
+
+    // 🔥 2️⃣ Reverse old balance effect
+    if (oldType == 'income') {
+      await supabase.rpc('decrement_balance', params: {
+        'acc_id': accountId,
+        'amount_val': oldAmount,
+      });
+    } else {
+      await supabase.rpc('increment_balance', params: {
+        'acc_id': accountId,
+        'amount_val': oldAmount,
+      });
+    }
+
+    // 🔥 3️⃣ Apply new balance effect
+    final newAmount = double.parse(amountCtrl.text);
+
+    if (selectedType == RecordType.income) {
+      await supabase.rpc('increment_balance', params: {
+        'acc_id': accountId,
+        'amount_val': newAmount,
+      });
+    } else {
+      await supabase.rpc('decrement_balance', params: {
+        'acc_id': accountId,
+        'amount_val': newAmount,
+      });
+    }
+
+    // 🔥 4️⃣ Update record table
     await supabase
         .from('records')
         .update({
           'title': titleCtrl.text.trim(),
-          'amount': double.parse(amountCtrl.text),
+          'amount': newAmount,
           'record_date': selectedDate.toIso8601String().split('T').first,
           'record_type': selectedType.name,
           'category_name': selectedCategory,
           'is_recurring': repeatType != null,
-                  })
+        })
         .eq('record_id', widget.record.id)
         .eq('user_id', user.id);
 
-    // ✅ build updated record and return it
-    final updatedRecord = Record(
-      id: widget.record.id,
-      title: titleCtrl.text.trim(),
-      amount: double.parse(amountCtrl.text),
-      date: selectedDate,
-      type: selectedType,
-      category: selectedCategory ?? "miscellaneous",
-    );
-
     if (!mounted) return;
-    Navigator.pop(context, updatedRecord); // ✅ return Record
+    Navigator.pop(context, true);
 
   } catch (e) {
     if (!mounted) return;

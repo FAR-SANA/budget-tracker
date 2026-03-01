@@ -8,6 +8,7 @@ class Record {
   final RecordType type;
   final String category;
   final String? repeatType;
+    final String accountId; 
 
   Record({
     required this.id,
@@ -16,6 +17,7 @@ class Record {
     required this.date,
     required this.type,
     required this.category,
+     required this.accountId,
     this.repeatType,
   });
 
@@ -32,6 +34,7 @@ class Record {
           : RecordType.expense,
       category: json['category_name'] ?? 'Unknown',
       repeatType: json['repeat_type'],
+          accountId: json['account_id'],
     );
   }
 }
