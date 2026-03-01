@@ -21,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final supabase = Supabase.instance.client;
 
   Account? primaryAccount;
+  List<Account> allAccounts = [];
+bool showAllAccounts = false; // for cumulative view
   RecordType selectedType = RecordType.income;
   List<Record> dayRecords = [];       // ✅ list + chart (only selected day)
 List<Record> uptoRecords = [];      // ✅ used only for balance totals
@@ -46,8 +48,14 @@ double get totalExpense => expenseUpToDate;
 
 // ✅ balance upto selectedDate
 double get balance {
-  final baseBalance = primaryAccount?.balance ?? 0; // opening balance
-  return baseBalance + totalIncome - totalExpense;
+  if (showAllAccounts) {
+    return allAccounts.fold<double>(
+      0,
+      (sum, acc) => sum + acc.balance,
+    );
+  }
+
+  return primaryAccount?.balance ?? 0;
 }
 
   @override
@@ -79,42 +87,68 @@ Future<void> loadAccount() async {
   }
 
   final accounts =
-      (data as List).map((e) => Account.fromJson(e)).toList();
+    (data as List).map((e) => Account.fromJson(e)).toList();
 
-  setState(() {
+setState(() {
+  allAccounts = accounts;
   primaryAccount = primaryAccount ?? accounts.first;
 });
 }
 
 Future<void> loadRecords() async {
   final user = supabase.auth.currentUser;
+  if (user == null) return;
 
-  if (user == null || primaryAccount == null) return;
-
-  final accountId = primaryAccount!.id!;
   final dateStr = _toPgDate(selectedDate);
 
-  final dayData = await supabase
-      .from('records')
-      .select()
-      .eq('user_id', user.id)
-      .eq('account_id', accountId)
-    .eq('record_date', dateStr)
-      .order('record_date', ascending: false);
+  List dayData;
+  List uptoData;
 
-  final dayList =
-      (dayData as List).map((json) => Record.fromJson(json)).toList();
+  if (showAllAccounts) {
+    // 🔵 ALL ACCOUNTS
 
-  final uptoData = await supabase
-      .from('records')
-      .select()
-      .eq('user_id', user.id)
-      .eq('account_id', accountId)
-      .lte('record_date', dateStr)
-      .order('record_date', ascending: false);
+    dayData = await supabase
+        .from('records')
+        .select()
+        .eq('user_id', user.id)
+        .eq('record_date', dateStr)
+        .order('record_date', ascending: false);
 
-  final uptoList =
-      (uptoData as List).map((json) => Record.fromJson(json)).toList();
+    uptoData = await supabase
+        .from('records')
+        .select()
+        .eq('user_id', user.id)
+        .lte('record_date', dateStr)
+        .order('record_date', ascending: false);
+
+  } else {
+    // 🟢 SINGLE ACCOUNT
+
+    if (primaryAccount == null) return;
+    final accountId = primaryAccount!.accountId;
+
+    dayData = await supabase
+        .from('records')
+        .select()
+        .eq('user_id', user.id)
+        .eq('account_id', accountId)
+        .eq('record_date', dateStr)
+        .order('record_date', ascending: false);
+
+    uptoData = await supabase
+        .from('records')
+        .select()
+        .eq('user_id', user.id)
+        .eq('account_id', accountId)
+        .lte('record_date', dateStr)
+        .order('record_date', ascending: false);
+  }
+
+final dayList =
+    dayData.map((json) => Record.fromJson(json)).toList();
+
+final uptoList =
+    uptoData.map((json) => Record.fromJson(json)).toList();
 
   double inc = 0;
   double exp = 0;
@@ -133,7 +167,6 @@ Future<void> loadRecords() async {
     incomeUpToDate = inc;
     expenseUpToDate = exp;
   });
-
 }
 
   void _showAddAccountDialog() {
@@ -339,25 +372,56 @@ onPressed: () async {
           children: [
             // 🔹 ACCOUNT NAME
             Row(
-              children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  height: 32,
-                  width: 32,
-                  fit: BoxFit.contain,
-                ),
+  children: [
+    Image.asset(
+      'assets/images/logo.png',
+      height: 32,
+      width: 32,
+      fit: BoxFit.contain,
+    ),
+    const SizedBox(width: 8),
 
-                const SizedBox(width: 8),
-                Text(
-                  primaryAccount?.name ?? "Account",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF142752),
-                  ),
-                ),
-              ],
-            ),
+    Expanded(
+      child: DropdownButtonHideUnderline(
+        child:DropdownButton<String>(
+  isExpanded: true,
+  value: showAllAccounts
+      ? 'ALL'
+      : primaryAccount?.accountId,
+  items: [
+    const DropdownMenuItem(
+      value: 'ALL',
+      child: Text("All Accounts"),
+    ),
+    ...allAccounts.map(
+      (acc) => DropdownMenuItem(
+        value: acc.accountId, // ✅ FIXED
+        child: Text(acc.name),
+      ),
+    )
+  ],
+  onChanged: (value) async {
+    if (value == null) return;
+
+    if (value == 'ALL') {
+      setState(() {
+        showAllAccounts = true;
+      });
+    } else {
+      setState(() {
+        showAllAccounts = false;
+        primaryAccount =
+            allAccounts.firstWhere((acc) => acc.accountId == value); // ✅ FIXED
+      });
+    }
+
+    await loadRecords();
+  },
+),
+      ),
+    ),
+  ],
+),
 
             const SizedBox(height: 16),
 
