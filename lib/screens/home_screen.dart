@@ -91,7 +91,10 @@ Future<void> loadAccount() async {
 
 setState(() {
   allAccounts = accounts;
-  primaryAccount = primaryAccount ?? accounts.first;
+primaryAccount = accounts.firstWhere(
+  (acc) => acc.accountId == primaryAccount?.accountId,
+  orElse: () => accounts.first,
+);
 });
 }
 
@@ -336,11 +339,16 @@ onPressed: () async {
 
           InkWell(
             borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
+            onTap: () async {
+              final changed = await Navigator.push<bool>(
+  context,
+  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+);
+
+if (changed == true) {
+  await loadAccount();
+  await loadRecords();
+}
             },
             child: CircleAvatar(
               radius: 20,

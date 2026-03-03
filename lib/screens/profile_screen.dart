@@ -200,13 +200,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                       title: const Text("Manage Accounts"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AllAccountsScreen(),
-                          ),
-                        );
+                      onTap: () async {
+                       final changed = await Navigator.push<bool>(
+   context,
+  MaterialPageRoute(
+    builder: (_) => const AllAccountsScreen(),
+  ),
+);
+
+if (changed == true) {
+  Navigator.pop(context, true); // 🔥 send back to HomeScreen
+}
                       },
                     ),
                   ],

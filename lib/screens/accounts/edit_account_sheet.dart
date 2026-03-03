@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'account_details_sheet.dart';
+
 
 class EditAccountSheet extends StatefulWidget {
   final Map account;
@@ -24,17 +24,23 @@ class _EditAccountSheetState extends State<EditAccountSheet> {
     );
   }
 
-  Future<void> saveAccount() async {
-    await Supabase.instance.client
-        .from('accounts')
-        .update({
-          'name': nameController.text.trim(),
-          'balance': double.parse(amountController.text.trim()),
-        })
-        .eq('account_id', widget.account['account_id']);
+Future<void> saveAccount() async {
+  final updatedData = {
+    'account_id': widget.account['account_id'],
+    'name': nameController.text.trim(),
+    'balance': double.parse(amountController.text.trim()),
+  };
 
-    Navigator.pop(context, true);
-  }
+  await Supabase.instance.client
+      .from('accounts')
+      .update({
+        'name': updatedData['name'],
+        'balance': updatedData['balance'],
+      })
+      .eq('account_id', widget.account['account_id']);
+
+  Navigator.pop(context, updatedData); // ✅ return updated map
+}
 
   @override
   Widget build(BuildContext context) {
