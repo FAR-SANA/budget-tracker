@@ -9,7 +9,6 @@ import 'profile_screen.dart';
 import 'add_record_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,218 +19,236 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final supabase = Supabase.instance.client;
 
+  late RealtimeChannel _recordsChannel;
+
   Account? primaryAccount;
   List<Account> allAccounts = [];
-bool showAllAccounts = false; // for cumulative view
+  bool showAllAccounts = false; // for cumulative view
   RecordType selectedType = RecordType.income;
-  List<Record> dayRecords = [];       // ✅ list + chart (only selected day)
-List<Record> uptoRecords = [];      // ✅ used only for balance totals
+  List<Record> dayRecords = []; // ✅ list + chart (only selected day)
+  List<Record> uptoRecords = []; // ✅ used only for balance totals
 
-double incomeUpToDate = 0;
-double expenseUpToDate = 0;
+  double incomeUpToDate = 0;
+  double expenseUpToDate = 0;
 
   DateTime selectedDate = DateTime.now();
   int touchedIndex = -1;
 
- // ✅ for list + chart (only selected day)
-double get dayIncome => dayRecords
-    .where((r) => r.type == RecordType.income)
-    .fold(0, (sum, r) => sum + r.amount);
+  // ✅ for list + chart (only selected day)
+  double get dayIncome => dayRecords
+      .where((r) => r.type == RecordType.income)
+      .fold(0, (sum, r) => sum + r.amount);
 
-double get dayExpense => dayRecords
-    .where((r) => r.type == RecordType.expense)
-    .fold(0, (sum, r) => sum + r.amount);
+  double get dayExpense => dayRecords
+      .where((r) => r.type == RecordType.expense)
+      .fold(0, (sum, r) => sum + r.amount);
 
-// ✅ totals upto selectedDate
-double get totalIncome => incomeUpToDate;
-double get totalExpense => expenseUpToDate;
+  // ✅ totals upto selectedDate
+  double get totalIncome => incomeUpToDate;
+  double get totalExpense => expenseUpToDate;
 
-// ✅ balance upto selectedDate
-double get balance {
-  if (showAllAccounts) {
-    return allAccounts.fold<double>(
-      0,
-      (sum, acc) => sum + acc.balance,
-    );
+  // ✅ balance upto selectedDate
+  double get balance {
+    if (showAllAccounts) {
+      return allAccounts.fold<double>(0, (sum, acc) => sum + acc.balance);
+    }
+
+    return primaryAccount?.balance ?? 0;
   }
-
-  return primaryAccount?.balance ?? 0;
-}
 
   @override
-void initState() {
-  super.initState();
-  _initialize();
-}
-Future<void> _initialize() async {
-  await loadAccount();
-
-  if (primaryAccount != null) {
-    await loadRecords();
-  }
-}
-  String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
-Future<void> loadAccount() async {
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
-
-  final data = await supabase
-      .from('accounts')
-      .select()
-      .eq('user_id', user.id)
-      .order('created_at', ascending: true);
-
-  if ((data as List).isEmpty){
-    _showAddAccountDialog();
-    return;
+  void initState() {
+    super.initState();
+    _initialize();
+    _listenForRealtimeUpdates();
   }
 
-  final accounts =
-    (data as List).map((e) => Account.fromJson(e)).toList();
-
-setState(() {
-  allAccounts = accounts;
-primaryAccount = accounts.firstWhere(
-  (acc) => acc.accountId == primaryAccount?.accountId,
-  orElse: () => accounts.first,
-);
-});
-}
-
-Future<void> loadRecords() async {
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
-
-  final dateStr = _toPgDate(selectedDate);
-
-  List dayData;
-  List uptoData;
-
-  if (showAllAccounts) {
-    // 🔵 ALL ACCOUNTS
-
-    dayData = await supabase
-        .from('records')
-        .select()
-        .eq('user_id', user.id)
-        .eq('record_date', dateStr)
-        .order('record_date', ascending: false);
-
-    uptoData = await supabase
-        .from('records')
-        .select()
-        .eq('user_id', user.id)
-        .lte('record_date', dateStr)
-        .order('record_date', ascending: false);
-
-  } else {
-    // 🟢 SINGLE ACCOUNT
-
-    if (primaryAccount == null) return;
-    final accountId = primaryAccount!.accountId;
-
-    dayData = await supabase
-        .from('records')
-        .select()
-        .eq('user_id', user.id)
-        .eq('account_id', accountId)
-        .eq('record_date', dateStr)
-        .order('record_date', ascending: false);
-
-    uptoData = await supabase
-        .from('records')
-        .select()
-        .eq('user_id', user.id)
-        .eq('account_id', accountId)
-        .lte('record_date', dateStr)
-        .order('record_date', ascending: false);
-  }
-
-final dayList =
-    dayData.map((json) => Record.fromJson(json)).toList();
-
-final uptoList =
-    uptoData.map((json) => Record.fromJson(json)).toList();
-
-  double inc = 0;
-  double exp = 0;
-
-  for (final r in uptoList) {
-    if (r.type == RecordType.income) {
-      inc += r.amount;
-    } else {
-      exp += r.amount;
-    }
-  }
-
-  setState(() {
-    dayRecords = dayList;
-    uptoRecords = uptoList;
-    incomeUpToDate = inc;
-    expenseUpToDate = exp;
-  });
-}
-Future<void> _deleteRecord(Record r) async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Delete Record"),
-      content: const Text("Are you sure you want to delete this record?"),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text("Cancel"),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text("Yes"),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  try {
-    // 🔥 1️⃣ Get current account balance
-    final accountData = await supabase
-        .from('accounts')
-        .select()
-        .eq('account_id', r.accountId)
-        .single();
-
-    double currentBalance =
-        (accountData['balance'] as num).toDouble();
-
-    // 🔥 2️⃣ Reverse the transaction effect
-    if (r.type == RecordType.income) {
-      currentBalance -= r.amount;
-    } else {
-      currentBalance += r.amount;
-    }
-
-    // 🔥 3️⃣ Update account balance in DB
-    await supabase
-        .from('accounts')
-        .update({'balance': currentBalance})
-        .eq('account_id', r.accountId);
-
-    // 🔥 4️⃣ Delete record
-    await supabase
-        .from('records')
-        .delete()
-        .eq('record_id', r.id);
-
-    // 🔥 5️⃣ Refresh everything
+  Future<void> _initialize() async {
     await loadAccount();
-    await loadRecords();
 
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Delete failed: $e")),
-    );
+    if (primaryAccount != null) {
+      await loadRecords();
+    }
   }
+
+  void _listenForRealtimeUpdates() {
+  final user = supabase.auth.currentUser;
+  if (user == null) return;
+
+  _recordsChannel = supabase
+      .channel('records_changes')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'records',
+        callback: (payload) async {
+
+          print("REALTIME EVENT TRIGGERED");
+          print("Payload: ${payload.newRecord}");
+
+          if (!mounted) return;
+
+          await loadAccount();
+          await loadRecords();
+        },
+      )
+      .subscribe();
 }
+
+  String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
+  Future<void> loadAccount() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final data = await supabase
+        .from('accounts')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at', ascending: true);
+
+    if ((data as List).isEmpty) {
+      _showAddAccountDialog();
+      return;
+    }
+
+    final accounts = (data as List).map((e) => Account.fromJson(e)).toList();
+
+    setState(() {
+      allAccounts = accounts;
+      primaryAccount = accounts.firstWhere(
+        (acc) => acc.isDefault == true,
+        orElse: () => accounts.first,
+      );
+    });
+  }
+
+  Future<void> loadRecords() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final dateStr = _toPgDate(selectedDate);
+
+    List dayData;
+    List uptoData;
+
+    if (showAllAccounts) {
+      // 🔵 ALL ACCOUNTS
+
+      dayData = await supabase
+          .from('records')
+          .select()
+          .eq('user_id', user.id)
+          .eq('record_date', dateStr)
+          .order('record_date', ascending: false);
+
+      uptoData = await supabase
+          .from('records')
+          .select()
+          .eq('user_id', user.id)
+          .lte('record_date', dateStr)
+          .order('record_date', ascending: false);
+    } else {
+      // 🟢 SINGLE ACCOUNT
+
+      if (primaryAccount == null) return;
+      final accountId = primaryAccount!.accountId;
+
+      dayData = await supabase
+          .from('records')
+          .select()
+          .eq('user_id', user.id)
+          .eq('account_id', accountId)
+          .eq('record_date', dateStr)
+          .order('record_date', ascending: false);
+
+      uptoData = await supabase
+          .from('records')
+          .select()
+          .eq('user_id', user.id)
+          .eq('account_id', accountId)
+          .lte('record_date', dateStr)
+          .order('record_date', ascending: false);
+    }
+
+    final dayList = dayData.map((json) => Record.fromJson(json)).toList();
+
+    final uptoList = uptoData.map((json) => Record.fromJson(json)).toList();
+
+    double inc = 0;
+    double exp = 0;
+
+    for (final r in uptoList) {
+      if (r.type == RecordType.income) {
+        inc += r.amount;
+      } else {
+        exp += r.amount;
+      }
+    }
+
+    setState(() {
+      dayRecords = dayList;
+      uptoRecords = uptoList;
+      incomeUpToDate = inc;
+      expenseUpToDate = exp;
+    });
+  }
+
+  Future<void> _deleteRecord(Record r) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Record"),
+        content: const Text("Are you sure you want to delete this record?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      // 🔥 1️⃣ Get current account balance
+      final accountData = await supabase
+          .from('accounts')
+          .select()
+          .eq('account_id', r.accountId)
+          .single();
+
+      double currentBalance = (accountData['balance'] as num).toDouble();
+
+      // 🔥 2️⃣ Reverse the transaction effect
+      if (r.type == RecordType.income) {
+        currentBalance -= r.amount;
+      } else {
+        currentBalance += r.amount;
+      }
+
+      // 🔥 3️⃣ Update account balance in DB
+      await supabase
+          .from('accounts')
+          .update({'balance': currentBalance})
+          .eq('account_id', r.accountId);
+
+      // 🔥 4️⃣ Delete record
+      await supabase.from('records').delete().eq('record_id', r.id);
+
+      // 🔥 5️⃣ Refresh everything
+      await loadAccount();
+      await loadRecords();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+    }
+  }
 
   void _showAddAccountDialog() {
     final nameCtrl = TextEditingController();
@@ -308,37 +325,53 @@ Future<void> _deleteRecord(Record r) async {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-onPressed: () async {
-  if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
-    return;
-  }
+                    onPressed: () async {
+                      if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+                        return;
+                      }
 
-  try {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+                      try {
+                        final user = supabase.auth.currentUser;
+                        if (user == null) return;
 
-    final inserted = await supabase.from('accounts').insert({
-      'name': nameCtrl.text,
-      'balance': double.parse(amountCtrl.text),
-      'user_id': user.id,
-    }).select().single();
+                        // 🔥 1️⃣ Check if user already has a default account
+                        final existingDefault = await supabase
+                            .from('accounts')
+                            .select()
+                            .eq('user_id', user.id)
+                            .eq('is_default', true);
 
-    setState(() {
-      primaryAccount = Account.fromJson(inserted);
-    });
+                        final isFirstAccount =
+                            (existingDefault as List).isEmpty;
 
-    Navigator.pop(context);
+                        // 🔥 2️⃣ Insert account
+                        final inserted = await supabase
+                            .from('accounts')
+                            .insert({
+                              'name': nameCtrl.text,
+                              'balance': double.parse(amountCtrl.text),
+                              'user_id': user.id,
+                              'is_default':
+                                  isFirstAccount, // ✅ Only first account becomes default
+                            })
+                            .select()
+                            .single();
 
-  } catch (e) {
-    print("ACCOUNT SAVE ERROR: $e");
+                        setState(() {
+                          primaryAccount = Account.fromJson(inserted);
+                        });
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("Error: $e")),
-  );
-  }
-},
+                        Navigator.pop(context);
+                      } catch (e) {
+                        print("ACCOUNT SAVE ERROR: $e");
 
-                     child: const Text(
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                      }
+                    },
+
+                    child: const Text(
                       "Save Account",
                       style: TextStyle(color: Colors.white),
                     ),
@@ -354,8 +387,9 @@ onPressed: () async {
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecords =
-    dayRecords.where((r) => r.type == selectedType).toList();
+    final filteredRecords = dayRecords
+        .where((r) => r.type == selectedType)
+        .toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -402,14 +436,14 @@ onPressed: () async {
             borderRadius: BorderRadius.circular(20),
             onTap: () async {
               final changed = await Navigator.push<bool>(
-  context,
-  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-);
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
 
-if (changed == true) {
-  await loadAccount();
-  await loadRecords();
-}
+              if (changed == true) {
+                await loadAccount();
+                await loadRecords();
+              }
             },
             child: CircleAvatar(
               radius: 20,
@@ -441,56 +475,73 @@ if (changed == true) {
           children: [
             // 🔹 ACCOUNT NAME
             Row(
-  children: [
-    Image.asset(
-      'assets/images/logo.png',
-      height: 32,
-      width: 32,
-      fit: BoxFit.contain,
-    ),
-    const SizedBox(width: 8),
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
 
-    Expanded(
-      child: DropdownButtonHideUnderline(
-        child:DropdownButton<String>(
-  isExpanded: true,
-  value: showAllAccounts
-      ? 'ALL'
-      : primaryAccount?.accountId,
-  items: [
-    const DropdownMenuItem(
-      value: 'ALL',
-      child: Text("All Accounts"),
-    ),
-    ...allAccounts.map(
-      (acc) => DropdownMenuItem(
-        value: acc.accountId, // ✅ FIXED
-        child: Text(acc.name),
-      ),
-    )
-  ],
-  onChanged: (value) async {
-    if (value == null) return;
+                Expanded(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: showAllAccounts
+                          ? 'ALL'
+                          : primaryAccount?.accountId,
+                      items: [
+                        const DropdownMenuItem(
+                          value: 'ALL',
+                          child: Text("All Accounts"),
+                        ),
+                        ...allAccounts.map(
+                          (acc) => DropdownMenuItem(
+                            value: acc.accountId, // ✅ FIXED
+                            child: Text(acc.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) async {
+                        if (value == null) return;
 
-    if (value == 'ALL') {
-      setState(() {
-        showAllAccounts = true;
-      });
-    } else {
-      setState(() {
-        showAllAccounts = false;
-        primaryAccount =
-            allAccounts.firstWhere((acc) => acc.accountId == value); // ✅ FIXED
-      });
-    }
+                        final user = supabase.auth.currentUser;
+                        if (user == null) return;
 
-    await loadRecords();
-  },
-),
-      ),
-    ),
-  ],
-),
+                        if (value == 'ALL') {
+                          setState(() {
+                            showAllAccounts = true;
+                          });
+
+                          await loadRecords();
+                          return;
+                        }
+
+                        // 🔥 1️⃣ Remove current default
+                        await supabase
+                            .from('accounts')
+                            .update({'is_default': false})
+                            .eq('user_id', user.id);
+
+                        // 🔥 2️⃣ Set selected account as default
+                        await supabase
+                            .from('accounts')
+                            .update({'is_default': true})
+                            .eq('account_id', value);
+
+                        setState(() {
+                          showAllAccounts = false;
+                        });
+
+                        await loadAccount(); // refresh primary account
+                        await loadRecords(); // refresh UI
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 16),
 
@@ -503,11 +554,11 @@ if (changed == true) {
                   style: const TextStyle(fontSize: 15),
                 ),
                 Text(
-  selectedType == RecordType.income
-      ? "Income\n₹${dayIncome.toStringAsFixed(2)}"
-      : "Expense\n₹${dayExpense.toStringAsFixed(2)}",
-  style: const TextStyle(fontSize: 15),
-),
+                  selectedType == RecordType.income
+                      ? "Income\n₹${dayIncome.toStringAsFixed(2)}"
+                      : "Expense\n₹${dayExpense.toStringAsFixed(2)}",
+                  style: const TextStyle(fontSize: 15),
+                ),
               ],
             ),
           ],
@@ -529,7 +580,7 @@ if (changed == true) {
             setState(() {
               selectedDate = selectedDate.subtract(const Duration(days: 1));
             });
-              await loadRecords();
+            await loadRecords();
           },
         ),
         Text(
@@ -546,7 +597,7 @@ if (changed == true) {
                   setState(() {
                     selectedDate = selectedDate.add(const Duration(days: 1));
                   });
-                   await loadRecords();
+                  await loadRecords();
                 }
               : null,
         ),
@@ -646,110 +697,110 @@ if (changed == true) {
       itemBuilder: (_, i) {
         final r = list[i];
 
-      return Dismissible(
- key: Key(r.id),
-  direction: DismissDirection.horizontal,
-  confirmDismiss: (_) async {
-    await _deleteRecord(r);
-    return false; // prevent auto dismiss animation
-  },
-  background: Container(
-    alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    color: Colors.red,
-    child: const Icon(Icons.delete, color: Colors.white),
-  ),
-  secondaryBackground: Container(
-    alignment: Alignment.centerRight,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    color: Colors.red,
-    child: const Icon(Icons.delete, color: Colors.white),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () async {
-        final changed = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RecordDetailsScreen(record: r),
+        return Dismissible(
+          key: Key(r.id),
+          direction: DismissDirection.horizontal,
+          confirmDismiss: (_) async {
+            await _deleteRecord(r);
+            return false; // prevent auto dismiss animation
+          },
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.red,
+            child: const Icon(Icons.delete, color: Colors.white),
           ),
-        );
-
-        if (changed == true) {
-          await loadRecords();
-        }
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.blue[50]!.withOpacity(0.65),
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.red,
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: InkWell(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.blue[100]!.withOpacity(0.35),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: Color(0xFF142752),
-                        child: Icon(Icons.work, color: Colors.white),
+              onTap: () async {
+                final changed = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RecordDetailsScreen(record: r),
+                  ),
+                );
+
+                if (changed == true) {
+                  await loadRecords();
+                }
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50]!.withOpacity(0.65),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.blue[100]!.withOpacity(0.35),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          r.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF142752),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const CircleAvatar(
+                                backgroundColor: Color(0xFF142752),
+                                child: Icon(Icons.work, color: Colors.white),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  r.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF142752),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Flexible(
-                  child: Text(
-                    "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: r.type == RecordType.income
-                          ? Colors.green
-                          : Colors.red,
+                        Flexible(
+                          child: Text(
+                            "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: r.type == RecordType.income
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-    ),
-  ),
-);
+        );
       },
     );
   }
@@ -821,30 +872,32 @@ if (changed == true) {
                       ListTile(
                         leading: const Icon(Icons.edit),
                         title: const Text("Text"),
-    onTap: () async {
-  Navigator.pop(context);
+                        onTap: () async {
+                          Navigator.pop(context);
 
-  final selectedAccountId = await Navigator.push<String?>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => AddRecordScreen(type: selectedType),
-    ),
-  );
+                          final selectedAccountId =
+                              await Navigator.push<String?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AddRecordScreen(type: selectedType),
+                                ),
+                              );
 
-  if (selectedAccountId != null) {
-    final data = await supabase
-        .from('accounts')
-        .select()
-        .eq('account_id', selectedAccountId)
-        .single();
+                          if (selectedAccountId != null) {
+                            final data = await supabase
+                                .from('accounts')
+                                .select()
+                                .eq('account_id', selectedAccountId)
+                                .single();
 
-    setState(() {
-      primaryAccount = Account.fromJson(data);
-    });
+                            setState(() {
+                              primaryAccount = Account.fromJson(data);
+                            });
 
-    await loadRecords();
-  }
-},
+                            await loadRecords();
+                          }
+                        },
                       ),
 
                       const Divider(height: 0),
@@ -959,8 +1012,6 @@ if (changed == true) {
     );
   }
 
-
-
   String _formatDate(DateTime d) {
     const months = [
       "January",
@@ -977,5 +1028,11 @@ if (changed == true) {
       "December",
     ];
     return "${d.day} ${months[d.month - 1]} ${d.year}";
+  }
+
+  @override
+  void dispose() {
+    supabase.removeChannel(_recordsChannel);
+    super.dispose();
   }
 }

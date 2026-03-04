@@ -5,14 +5,99 @@ import 'package:flutter/services.dart';
 import 'screens/welcome_screen.dart'; // ✅ ADDED
 import 'screens/setnewpass.dart';
 
+import 'package:telephony/telephony.dart';
+
+@pragma('vm:entry-point')
+Future<void> backgroundSmsHandler(SmsMessage message) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase for background isolate
+  await Supabase.initialize(
+     url: 'https://zpfqupnigkvfrjukuquq.supabase.co',
+    anonKey: 'sb_publishable_iTpvGf7x_nu48jJYcc88oA__SWIRoB-',
+  );
+
+  final body = message.body ?? "";
+
+  print("========== SMS DETECTED ==========");
+  print("Sender: ${message.address}");
+  print("Message: $body");
+  print("Date: ${message.date}");
+  print("==================================");
+
+  final supabase = Supabase.instance.client;
+  final user = supabase.auth.currentUser;
+
+  print("User in background: $user"); 
+
+  if (user == null) return;
+
+  // ---------------------------
+  // 1️⃣ Extract amount
+  // ---------------------------
+  final regex = RegExp(r'(?:Rs\.?|INR|₹)\s?(\d+)');
+  final match = regex.firstMatch(body);
+
+  if (match == null) return;
+
+  final amount = double.parse(match.group(1)!);
+
+  // ---------------------------
+  // 2️⃣ Detect record type
+  // ---------------------------
+  String recordType;
+
+  if (body.toLowerCase().contains("credited")) {
+    recordType = "income";
+  } else if (body.toLowerCase().contains("debited")) {
+    recordType = "expense";
+  } else {
+    return;
+  }
+
+  // ---------------------------
+  // 3️⃣ Get default account
+  // ---------------------------
+  final account = await supabase
+      .from('accounts')
+      .select()
+      .eq('user_id', user.id)
+      .eq('is_default', true)
+      .single();
+
+  // ---------------------------
+  // 4️⃣ Generate title
+  // ---------------------------
+  final countResult = await supabase
+      .from('records')
+      .select('record_id')
+      .eq('user_id', user.id);
+
+  final count = (countResult as List).length + 1;
+
+  final title = "Bank SMS $count";
+
+  // ---------------------------
+  // 5️⃣ Insert record
+  // ---------------------------
+  await supabase.from('records').insert({
+    'title': title,
+    'amount': amount,
+    'record_type': recordType,
+    'category_name': 'Miscellaneous',
+    'account_id': account['account_id'],
+    'record_date': DateTime.now().toIso8601String().split('T').first,
+    'user_id': user.id,
+  });
+
+  print("Record created: $title ₹$amount");
+}
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await NotificationService.init();
 
@@ -21,19 +106,28 @@ void main() async {
     anonKey: 'sb_publishable_iTpvGf7x_nu48jJYcc88oA__SWIRoB-',
   );
 
-  runApp(const BudgeeApp());
-Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-  final event = data.event;
+  final telephony = Telephony.instance;
 
-  if (event == AuthChangeEvent.passwordRecovery) {
-    navKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const SetNewPasswordScreen(),
-      ),
-      (route) => false,
-    );
-  }
-});
+  // REQUEST PERMISSION
+  await telephony.requestPhoneAndSmsPermissions;
+
+   Telephony.instance.listenIncomingSms(
+    onNewMessage: backgroundSmsHandler,
+    onBackgroundMessage: backgroundSmsHandler,
+    listenInBackground: true,
+  );
+
+  runApp(const BudgeeApp());
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final event = data.event;
+
+    if (event == AuthChangeEvent.passwordRecovery) {
+      navKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const SetNewPasswordScreen()),
+        (route) => false,
+      );
+    }
+  });
 }
 
 class BudgeeApp extends StatelessWidget {
@@ -42,7 +136,7 @@ class BudgeeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-       navigatorKey: navKey,
+      navigatorKey: navKey,
       debugShowCheckedModeBanner: false,
       title: 'Budgee',
 
