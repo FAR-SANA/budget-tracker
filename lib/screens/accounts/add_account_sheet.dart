@@ -22,7 +22,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
       'balance': double.parse(amountController.text.trim()),
     });
 
-    Navigator.pop(context);
+   Navigator.pop(context, true);
   }
 
   @override
