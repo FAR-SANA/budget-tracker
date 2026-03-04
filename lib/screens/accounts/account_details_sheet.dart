@@ -1,28 +1,45 @@
 import 'package:flutter/material.dart';
 import 'edit_account_sheet.dart';
 
-class AccountDetailsSheet extends StatelessWidget {
+class AccountDetailsSheet extends StatefulWidget {
   final Map account;
 
   const AccountDetailsSheet({super.key, required this.account});
 
-  void openEdit(BuildContext context) async {
-    final result = await showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: EditAccountSheet(account: account),
-        ),
-      ),
-    );
+  @override
+  State<AccountDetailsSheet> createState() => _AccountDetailsSheetState();
+}
 
-    if (result != null) {
-      // Optional: refresh UI if needed
-    }
+class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
+  late Map accountData;
+
+  @override
+  void initState() {
+    super.initState();
+    accountData = Map.from(widget.account);
   }
+
+ void openEdit() async {
+  final result = await showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: EditAccountSheet(account: accountData),
+      ),
+    ),
+  );
+
+  if (result != null) {
+    setState(() {
+      accountData = result; // 🔥 update local UI
+    });
+
+    Navigator.pop(context, true); // 🔥 send change upward
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -38,13 +55,11 @@ class AccountDetailsSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔹 Back Arrow
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
               ),
 
-              // 🔹 Title
               const Center(
                 child: Text(
                   "Account Details",
@@ -58,7 +73,6 @@ class AccountDetailsSheet extends StatelessWidget {
 
               const SizedBox(height: 35),
 
-              // 🔹 Account Name
               const Text(
                 "Account Name:",
                 style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
@@ -77,14 +91,13 @@ class AccountDetailsSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  account['name'],
+                  accountData['name'],
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
 
               const SizedBox(height: 10),
 
-              // 🔹 Amount
               const Text(
                 "Amount:",
                 style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
@@ -103,19 +116,18 @@ class AccountDetailsSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  "₹ ${account['balance']}",
+                  "₹ ${accountData['balance']}",
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
 
               const SizedBox(height: 50),
 
-              // 🔹 Edit Button (same style as Create button)
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () => openEdit(context),
+                  onPressed: openEdit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A2B5D),
                     shape: RoundedRectangleBorder(

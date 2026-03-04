@@ -91,7 +91,10 @@ Future<void> loadAccount() async {
 
 setState(() {
   allAccounts = accounts;
-  primaryAccount = primaryAccount ?? accounts.first;
+primaryAccount = accounts.firstWhere(
+  (acc) => acc.accountId == primaryAccount?.accountId,
+  orElse: () => accounts.first,
+);
 });
 }
 
@@ -167,6 +170,67 @@ final uptoList =
     incomeUpToDate = inc;
     expenseUpToDate = exp;
   });
+}
+Future<void> _deleteRecord(Record r) async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Delete Record"),
+      content: const Text("Are you sure you want to delete this record?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text("Yes"),
+        ),
+      ],
+    ),
+  );
+
+  if (confirm != true) return;
+
+  try {
+    // 🔥 1️⃣ Get current account balance
+    final accountData = await supabase
+        .from('accounts')
+        .select()
+        .eq('account_id', r.accountId)
+        .single();
+
+    double currentBalance =
+        (accountData['balance'] as num).toDouble();
+
+    // 🔥 2️⃣ Reverse the transaction effect
+    if (r.type == RecordType.income) {
+      currentBalance -= r.amount;
+    } else {
+      currentBalance += r.amount;
+    }
+
+    // 🔥 3️⃣ Update account balance in DB
+    await supabase
+        .from('accounts')
+        .update({'balance': currentBalance})
+        .eq('account_id', r.accountId);
+
+    // 🔥 4️⃣ Delete record
+    await supabase
+        .from('records')
+        .delete()
+        .eq('record_id', r.id);
+
+    // 🔥 5️⃣ Refresh everything
+    await loadAccount();
+    await loadRecords();
+
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Delete failed: $e")),
+    );
+  }
 }
 
   void _showAddAccountDialog() {
@@ -336,11 +400,16 @@ onPressed: () async {
 
           InkWell(
             borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
+            onTap: () async {
+              final changed = await Navigator.push<bool>(
+  context,
+  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+);
+
+if (changed == true) {
+  await loadAccount();
+  await loadRecords();
+}
             },
             child: CircleAvatar(
               radius: 20,
@@ -577,94 +646,110 @@ onPressed: () async {
       itemBuilder: (_, i) {
         final r = list[i];
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-           onTap: () async {
-  final changed = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => RecordDetailsScreen(record: r),
-    ),
-  );
+      return Dismissible(
+ key: Key(r.id),
+  direction: DismissDirection.horizontal,
+  confirmDismiss: (_) async {
+    await _deleteRecord(r);
+    return false; // prevent auto dismiss animation
+  },
+  background: Container(
+    alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    color: Colors.red,
+    child: const Icon(Icons.delete, color: Colors.white),
+  ),
+  secondaryBackground: Container(
+    alignment: Alignment.centerRight,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    color: Colors.red,
+    child: const Icon(Icons.delete, color: Colors.white),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        final changed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RecordDetailsScreen(record: r),
+          ),
+        );
 
-  if (changed == true) {
-    await loadRecords(); // ✅ refresh list from DB
-  }
-},
-
-            child: ClipRRect(
+        if (changed == true) {
+          await loadRecords();
+        }
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.blue[50]!.withOpacity(0.65),
               borderRadius: BorderRadius.circular(14),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50]!.withOpacity(0.65), // glass effect
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.blue[100]!.withOpacity(0.35),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+              border: Border.all(
+                color: Colors.blue[100]!.withOpacity(0.35),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: const Color(0xFF142752),
-                              child: const Icon(
-                                Icons.work,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                r.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF142752),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const CircleAvatar(
+                        backgroundColor: Color(0xFF142752),
+                        child: Icon(Icons.work, color: Colors.white),
                       ),
-                      Flexible(
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: Text(
-                          "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
+                          r.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: r.type == RecordType.income
-                                ? Colors.green
-                                : Colors.red,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF142752),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+                Flexible(
+                  child: Text(
+                    "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: r.type == RecordType.income
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        );
+        ),
+      ),
+    ),
+  ),
+);
       },
     );
   }
