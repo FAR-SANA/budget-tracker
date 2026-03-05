@@ -8,6 +8,8 @@ import '../models/account.dart';
 import 'profile_screen.dart';
 import 'add_record_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'voice_input_dialog.dart';
+import '../services/voice_parser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -72,28 +74,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _listenForRealtimeUpdates() {
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-  _recordsChannel = supabase
-      .channel('records_changes')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'records',
-        callback: (payload) async {
+    _recordsChannel = supabase
+        .channel('records_changes')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'records',
+          callback: (payload) async {
+            print("REALTIME EVENT TRIGGERED");
+            print("Payload: ${payload.newRecord}");
 
-          print("REALTIME EVENT TRIGGERED");
-          print("Payload: ${payload.newRecord}");
+            if (!mounted) return;
 
-          if (!mounted) return;
-
-          await loadAccount();
-          await loadRecords();
-        },
-      )
-      .subscribe();
-}
+            await loadAccount();
+            await loadRecords();
+          },
+        )
+        .subscribe();
+  }
 
   String _toPgDate(DateTime d) => d.toIso8601String().split('T').first;
   Future<void> loadAccount() async {
@@ -905,9 +906,49 @@ class _HomeScreenState extends State<HomeScreen> {
                       ListTile(
                         leading: const Icon(Icons.mic),
                         title: const Text("Voice"),
-                        onTap: () {
+                        onTap: () async {
                           Navigator.pop(context);
-                          // voice logic later
+
+                          final text = await showDialog<String>(
+                            context: context,
+                            builder: (_) => const VoiceInputDialog(),
+                          );
+
+                          if (text == null || text.isEmpty) return;
+                          final supabase = Supabase.instance.client;
+                          final user = supabase.auth.currentUser;
+
+                          if (user == null) return;
+                          final accounts = await supabase
+                              .from('accounts')
+                              .select('name')
+                              .eq('user_id', user.id);
+
+                          final accountNames = accounts
+                              .map<String>((a) => a['name'] as String)
+                              .toList();
+
+                          final parsed = VoiceParser.parse(text, accountNames);
+
+                          if (parsed == null) return;
+
+                          final changed = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AddRecordScreen(
+                                type: parsed!.type,
+                                voiceTitle: parsed.title,
+                                voiceAmount: parsed.amount,
+                                voiceCategory: parsed.category,
+                                voiceDate: parsed.date,
+                                voiceAccount: parsed.accountName,
+                              ),
+                            ),
+                          );
+
+                          if (changed == true) {
+                            await loadRecords();
+                          }
                         },
                       ),
 

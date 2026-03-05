@@ -207,7 +207,7 @@ void openAddAccount() async {
       ),
     ),
   );
-}).toList(),
+}),
                   const SizedBox(height: 20),
 
                   SizedBox(

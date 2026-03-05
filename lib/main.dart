@@ -13,7 +13,7 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
 
   // Initialize Supabase for background isolate
   await Supabase.initialize(
-     url: 'https://zpfqupnigkvfrjukuquq.supabase.co',
+    url: 'https://zpfqupnigkvfrjukuquq.supabase.co',
     anonKey: 'sb_publishable_iTpvGf7x_nu48jJYcc88oA__SWIRoB-',
   );
 
@@ -28,7 +28,7 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
   final supabase = Supabase.instance.client;
   final user = supabase.auth.currentUser;
 
-  print("User in background: $user"); 
+  print("User in background: $user");
 
   if (user == null) return;
 
@@ -75,7 +75,7 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
 
   final count = (countResult as List).length + 1;
 
-  final title = "Bank SMS $count";
+  final title = "Bank SMS Record $count";
 
   // ---------------------------
   // 5️⃣ Insert record
@@ -84,7 +84,7 @@ Future<void> backgroundSmsHandler(SmsMessage message) async {
     'title': title,
     'amount': amount,
     'record_type': recordType,
-    'category_name': 'Miscellaneous',
+    'category_name': 'miscellaneous',
     'account_id': account['account_id'],
     'record_date': DateTime.now().toIso8601String().split('T').first,
     'user_id': user.id,
@@ -111,7 +111,7 @@ void main() async {
   // REQUEST PERMISSION
   await telephony.requestPhoneAndSmsPermissions;
 
-   Telephony.instance.listenIncomingSms(
+  Telephony.instance.listenIncomingSms(
     onNewMessage: backgroundSmsHandler,
     onBackgroundMessage: backgroundSmsHandler,
     listenInBackground: true,
