@@ -683,6 +683,7 @@ if (changed == true) {
   }
 },
       child: ClipRRect(
+        
         borderRadius: BorderRadius.circular(14),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
