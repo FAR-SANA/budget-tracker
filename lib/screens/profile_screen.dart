@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'edit_profile_screen.dart';
 import 'accounts/all_accounts_screen.dart';
 import 'change_password_screen.dart';
+import '../services/sms_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -188,10 +189,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         );
                       },
                     ),
-                    const ListTile(
-                      leading: Icon(Icons.sms, color: Colors.indigo),
-                      title: Text("Enable SMS Tracking"),
-                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    ListTile(
+                      leading: const Icon(Icons.sms, color: Colors.indigo),
+                      title: const Text("Enable SMS Tracking"),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _showSmsDialog,
                     ),
                     ListTile(
                       leading: const Icon(
@@ -201,16 +203,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                       title: const Text("Manage Accounts"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                       final changed = await Navigator.push<bool>(
-   context,
-  MaterialPageRoute(
-    builder: (_) => const AllAccountsScreen(),
-  ),
-);
+                        final changed = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AllAccountsScreen(),
+                          ),
+                        );
 
-if (changed == true) {
-  Navigator.pop(context, true); // 🔥 send back to HomeScreen
-}
+                        if (changed == true) {
+                          Navigator.pop(
+                            context,
+                            true,
+                          ); // 🔥 send back to HomeScreen
+                        }
                       },
                     ),
                   ],
@@ -280,4 +285,47 @@ if (changed == true) {
       ),
     );
   }
+  void _showSmsDialog() {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Enable SMS Tracking"),
+      content: const Text(
+        "Budgee can automatically detect debit and credit "
+        "transactions from your bank SMS messages.\n\n"
+        "We only read transaction-related messages.\n"
+        "We do NOT store or upload your personal SMS.\n\n"
+        "Do you want to enable SMS tracking?",
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _enableSmsTracking();
+          },
+          child: const Text("Enable"),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _enableSmsTracking() async {
+  final status = await Permission.sms.request();
+
+  if (status.isGranted) {
+    SmsService.startListening();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("SMS tracking enabled")),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("SMS permission denied")),
+    );
+  }
+}
 }

@@ -60,28 +60,28 @@ void openAddAccount() async {
   }
 }
 
-void openDetails(Map account) async {
-  final changed = await showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          color: Colors.white,
-          child: AccountDetailsSheet(account: account),
+  void openDetails(Map account) async {
+    final changed = await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            child: AccountDetailsSheet(account: account),
+          ),
         ),
       ),
-    ),
-  );
+    );
 
-  if (changed == true) {
-    fetchAccounts();
-       Navigator.pop(context, true); 
+    if (changed == true) {
+      fetchAccounts();
+      Navigator.pop(context, true);
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +207,7 @@ void openDetails(Map account) async {
       ),
     ),
   );
-}).toList(),
+}),
                   const SizedBox(height: 20),
 
                   SizedBox(

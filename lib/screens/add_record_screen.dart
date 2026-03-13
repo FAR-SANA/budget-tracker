@@ -3,8 +3,22 @@ import '../models/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddRecordScreen extends StatefulWidget {
+  final String? voiceAccount;
   final RecordType type;
-  const AddRecordScreen({super.key, required this.type});
+  final String? voiceTitle;
+  final double? voiceAmount;
+  final String? voiceCategory;
+  final DateTime? voiceDate;
+
+  AddRecordScreen({
+  Key? key,
+  required this.type,
+  this.voiceTitle,
+  this.voiceAmount,
+  this.voiceCategory,
+  this.voiceDate,
+  this.voiceAccount,
+}) : super(key: key);
 
   @override
   State<AddRecordScreen> createState() => _AddRecordScreenState();
@@ -17,17 +31,63 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   final amountCtrl = TextEditingController();
   final dateCtrl = TextEditingController();
 
+Future<void> _selectVoiceAccount(String accountName) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  final accounts = await Supabase.instance.client
+      .from('accounts')
+      .select()
+      .eq('user_id', user.id);
+
+  for (final acc in accounts) {
+    if (acc['name'].toString().toLowerCase() == accountName.toLowerCase()) {
+      setState(() {
+        selectedAccountId = acc['account_id'];
+        selectedAccountName = acc['name'];
+      });
+      break;
+    }
+  }
+}
+
   late RecordType selectedType; // UUID for database
 String? selectedCategory;     // name for UI
   String? repeatType; // null = Never
   DateTime? selectedDate;
 String? selectedAccountId;
 String? selectedAccountName;
-  @override
-  void initState() {
-    super.initState();
-    selectedType = widget.type;
+ @override
+void initState() {
+  super.initState();
+
+  selectedType = widget.type;
+
+  if (widget.voiceTitle != null) {
+    titleCtrl.text = widget.voiceTitle!;
   }
+
+  if (widget.voiceAmount != null) {
+    amountCtrl.text = widget.voiceAmount!.toString();
+  }
+
+  if (widget.voiceCategory != null) {
+    selectedCategory = widget.voiceCategory;
+  }
+
+  if (widget.voiceDate != null) {
+    selectedDate = widget.voiceDate!;
+  } else {
+    selectedDate = DateTime.now();
+  }
+
+  dateCtrl.text =
+      "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}";
+
+  if (widget.voiceAccount != null) {
+  _selectVoiceAccount(widget.voiceAccount!);
+}
+}
   
   @override
   Widget build(BuildContext context) {
