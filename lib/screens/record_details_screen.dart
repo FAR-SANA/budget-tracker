@@ -1,12 +1,83 @@
 import 'package:flutter/material.dart';
 import '../models/record.dart';
 import 'edit_record_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RecordDetailsScreen extends StatelessWidget {
+class RecordDetailsScreen extends StatefulWidget {
   final Record record;
 
   const RecordDetailsScreen({super.key, required this.record});
 
+  @override
+  State<RecordDetailsScreen> createState() => _RecordDetailsScreenState();
+}
+
+class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
+String? repeatType;
+  String? accountName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAccount();
+     _loadRepeatType();
+  }
+  Future<void> _loadRepeatType() async {
+  if (widget.record.recurringRuleId == null) {
+    setState(() {
+      repeatType = null;
+    });
+    return;
+  }
+
+  final data = await Supabase.instance.client
+      .from('recurring_rules')
+      .select('frequency')
+     .eq('rule_id', widget.record.recurringRuleId!)
+      .single();
+
+  if (!mounted) return;
+
+  setState(() {
+    repeatType = data['frequency'];
+  });
+}
+
+Future<void> _loadAccount() async {
+  try {
+    final data = await Supabase.instance.client
+        .from('accounts')
+        .select('name')
+        .eq('account_id', widget.record.accountId)
+        .single();
+
+    if (!mounted) return;
+
+    setState(() {
+      accountName = data['name'];
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() {
+      accountName = "Unknown Account";
+    });
+  }
+}
+String getRepeatLabel(String? repeat) {
+  switch (repeat) {
+    case 'daily':
+      return 'Daily';
+    case 'weekly':
+      return 'Weekly';
+    case 'monthly':
+      return 'Monthly';
+    case 'yearly':
+      return 'Yearly';
+    default:
+      return 'Never';
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,23 +103,23 @@ class RecordDetailsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _label("Transaction Type"),
-              _value(record.type == RecordType.income ? "Income" : "Expense"),
+            _value(widget.record.type == RecordType.income ? "Income" : "Expense"),
 
               const SizedBox(height: 16),
 
               _label("Title"),
-              _value(record.title),
+             _value(widget.record.title),
 
               const SizedBox(height: 16),
 
               _label("Amount"),
-              _value("₹ ${record.amount.toStringAsFixed(0)}"),
+             _value("₹ ${widget.record.amount.toStringAsFixed(0)}"),
 
               const SizedBox(height: 16),
 
               _label("Date"),
               _value(
-                "${record.date.day}/${record.date.month}/${record.date.year}",
+               "${widget.record.date.day}/${widget.record.date.month}/${widget.record.date.year}",
               ),
 
               const SizedBox(height: 20),
@@ -61,15 +132,15 @@ class RecordDetailsScreen extends StatelessWidget {
                   color: const Color(0xFF142752),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
-                  child: Text(
-                    "Personal Account",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+             child: Center(
+  child: Text(
+    accountName ?? "Loading...",
+    style: const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.w600,
+    ),
+  ),
+),
               ),
 
               const SizedBox(height: 20),
@@ -91,14 +162,14 @@ class RecordDetailsScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           Image.asset(
-                            "assets/icons/categories/${record.category}.png",
+                            "assets/icons/categories/${widget.record.category}.png",
                             width: 20,
                             height: 20,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              record.category,
+                             widget.record.category,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -130,12 +201,12 @@ class RecordDetailsScreen extends StatelessWidget {
                             padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: record.repeatType == null
+                              color:widget.record.repeatType == null
                                   ? Colors.transparent
                                   : Colors.indigo.withOpacity(0.15),
                             ),
                             child: Icon(
-                              record.repeatType == null
+                              widget.record.repeatType == null
                                   ? Icons.radio_button_unchecked
                                   : Icons.check_circle,
                               size: 20,
@@ -145,7 +216,7 @@ class RecordDetailsScreen extends StatelessWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              record.repeatType ?? "Repeat",
+                     getRepeatLabel(repeatType),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -182,7 +253,7 @@ class RecordDetailsScreen extends StatelessWidget {
   final updated = await Navigator.push<Record?>(
     context,
     MaterialPageRoute(
-      builder: (_) => EditRecordScreen(record: record),
+     builder: (_) => EditRecordScreen(record: widget.record),
     ),
   );
 

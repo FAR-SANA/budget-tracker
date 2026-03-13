@@ -669,18 +669,19 @@ if (changed == true) {
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     child: InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () async {
-        final changed = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RecordDetailsScreen(record: r),
-          ),
-        );
+     onTap: () async {
+  final changed = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RecordDetailsScreen(record: r),
+    ),
+  );
 
-        if (changed == true) {
-          await loadRecords();
-        }
-      },
+  if (changed == true) {
+    await loadAccount();   // 🔥 refresh balances
+    await loadRecords();   // 🔥 refresh records
+  }
+},
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: BackdropFilter(

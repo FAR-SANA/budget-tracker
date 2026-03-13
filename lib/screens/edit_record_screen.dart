@@ -24,6 +24,8 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   String? repeatType;
   late DateTime selectedDate;
 String? selectedAccountId;
+List accounts = [];
+String? selectedAccountName;
   @override
   void initState() {
     super.initState();
@@ -43,8 +45,32 @@ String? selectedAccountId;
     repeatType = widget.record.repeatType;
     selectedDate = widget.record.date;
     selectedAccountId = widget.record.accountId;
+
+      _loadAccounts();
   }
 
+  Future<void> _loadAccounts() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  final data = await Supabase.instance.client
+      .from('accounts')
+      .select()
+      .eq('user_id', user.id);
+
+  if (!mounted) return;
+
+  setState(() {
+    accounts = data;
+
+    for (var acc in accounts) {
+      if (acc['account_id'] == selectedAccountId) {
+        selectedAccountName = acc['name'];
+        break;
+      }
+    }
+  });
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,19 +247,49 @@ String? selectedAccountId;
 
   // ---------------- BUTTONS ----------------
 
-  Widget _accountButton() {
-    return Container(
+ Widget _accountButton() {
+  return GestureDetector(
+    onTap: _showAccountSheet,
+    child: Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF142752),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: Text("Select account", style: TextStyle(color: Colors.white)),
+      child: Center(
+        child: Text(
+          selectedAccountName ?? "Select account",
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+void _showAccountSheet() {
+  showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: accounts.map((acc) {
+          return ListTile(
+            title: Text(acc['name']),
+            onTap: () {
+              setState(() {
+                selectedAccountId = acc['account_id'];
+                selectedAccountName = acc['name'];
+              });
+
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      );
+    },
+  );
+}
 
 Widget _categoryButton() {
   return InkWell(
@@ -497,20 +553,67 @@ Future<void> _save() async {
     }
 
     // 🔥 3️⃣ Apply new balance effect
-    final newAmount = double.parse(amountCtrl.text);
+   final newAmount = double.parse(amountCtrl.text);
+final newAccountId = selectedAccountId ?? accountId;
 
-    if (selectedType == RecordType.income) {
-      await supabase.rpc('increment_balance', params: {
-        'acc_id': accountId,
-        'amount_val': newAmount,
-      });
-    } else {
-      await supabase.rpc('decrement_balance', params: {
-        'acc_id': accountId,
-        'amount_val': newAmount,
-      });
-    }
+if (selectedType == RecordType.income) {
+  await supabase.rpc('increment_balance', params: {
+    'acc_id': newAccountId,
+    'amount_val': newAmount,
+  });
+} else {
+  await supabase.rpc('decrement_balance', params: {
+    'acc_id': newAccountId,
+    'amount_val': newAmount,
+  });
+}
 
+String? recurringRuleId = widget.record.recurringRuleId;
+
+if (repeatType == null) {
+  // 🔴 User selected "Never"
+  if (recurringRuleId != null) {
+    await supabase
+        .from('recurring_rules')
+        .update({'is_active': false})
+        .eq('rule_id', recurringRuleId);
+  }
+
+  recurringRuleId = null;
+} else {
+  final freq = repeatType!.toLowerCase();
+
+  if (recurringRuleId == null) {
+    // 🟢 create new rule
+    final rule = await supabase
+        .from('recurring_rules')
+        .insert({
+          'user_id': user.id,
+          'account_id': selectedAccountId,
+          'title': titleCtrl.text.trim(),
+          'amount': double.parse(amountCtrl.text),
+          'record_type': selectedType.name,
+          'category_name': selectedCategory,
+          'frequency': freq,
+          'interval': 1,
+          'start_date': selectedDate.toIso8601String().split('T').first,
+          'next_run_date': selectedDate.toIso8601String().split('T').first,
+          'is_active': true,
+        })
+        .select()
+        .single();
+
+    recurringRuleId = rule['rule_id'];
+  } else {
+    // 🔵 update existing rule
+    await supabase
+        .from('recurring_rules')
+        .update({
+          'frequency': freq,
+        })
+        .eq('rule_id', recurringRuleId);
+  }
+}
     // 🔥 4️⃣ Update record table
     await supabase
         .from('records')
@@ -520,13 +623,27 @@ Future<void> _save() async {
           'record_date': selectedDate.toIso8601String().split('T').first,
           'record_type': selectedType.name,
           'category_name': selectedCategory,
+          'account_id': selectedAccountId,
           'is_recurring': repeatType != null,
         })
         .eq('record_id', widget.record.id)
         .eq('user_id', user.id);
 
     if (!mounted) return;
-    Navigator.pop(context, true);
+
+Navigator.pop(
+  context,
+  Record(
+    id: widget.record.id,
+    title: titleCtrl.text.trim(),
+    amount: newAmount,
+    date: selectedDate,
+    type: selectedType,
+    category: selectedCategory ?? "miscellaneous",
+    accountId: selectedAccountId!,
+    repeatType: repeatType,
+  ),
+);
 
   } catch (e) {
     if (!mounted) return;

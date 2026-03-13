@@ -9,7 +9,7 @@ class Record {
   final String category;
   final String? repeatType;
     final String accountId; 
-
+  final String? recurringRuleId;     
   Record({
     required this.id,
     required this.title,
@@ -19,6 +19,7 @@ class Record {
     required this.category,
      required this.accountId,
     this.repeatType,
+        this.recurringRuleId,  
   });
 
   factory Record.fromJson(Map<String, dynamic> json) {
@@ -35,6 +36,7 @@ class Record {
       category: json['category_name'] ?? 'Unknown',
       repeatType: json['repeat_type'],
           accountId: json['account_id'],
+            recurringRuleId: json['recurring_rule_id'],
     );
   }
 }
