@@ -690,170 +690,122 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ---------------- RECORD LIST ----------------
-  Widget _recordList(List<Record> list) {
-    return ListView.builder(
-      itemCount: list.length,
-      shrinkWrap: true, // ✅ key
-      physics: const NeverScrollableScrollPhysics(), // ✅ key
-      itemBuilder: (_, i) {
-        final r = list[i];
+ Widget _recordList(List<Record> list) {
+  return ListView.builder(
+    itemCount: list.length,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    itemBuilder: (_, i) {
+      final r = list[i];
 
-<<<<<<< HEAD
       return Dismissible(
- key: Key(r.id),
-  direction: DismissDirection.horizontal,
-  confirmDismiss: (_) async {
-    await _deleteRecord(r);
-    return false; // prevent auto dismiss animation
-  },
-  background: Container(
-    alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    color: Colors.red,
-    child: const Icon(Icons.delete, color: Colors.white),
-  ),
-  secondaryBackground: Container(
-    alignment: Alignment.centerRight,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    color: Colors.red,
-    child: const Icon(Icons.delete, color: Colors.white),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(14),
-     onTap: () async {
-  final changed = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => RecordDetailsScreen(record: r),
-    ),
-  );
+        key: Key(r.id),
+        direction: DismissDirection.horizontal,
+        confirmDismiss: (_) async {
+          await _deleteRecord(r);
+          return false;
+        },
+        background: Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          color: Colors.red,
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        secondaryBackground: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          color: Colors.red,
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () async {
+              final changed = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecordDetailsScreen(record: r),
+                ),
+              );
 
-  if (changed == true) {
-    await loadAccount();   // 🔥 refresh balances
-    await loadRecords();   // 🔥 refresh records
-  }
-},
-      child: ClipRRect(
-        
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.blue[50]!.withOpacity(0.65),
-=======
-        return Dismissible(
-          key: Key(r.id),
-          direction: DismissDirection.horizontal,
-          confirmDismiss: (_) async {
-            await _deleteRecord(r);
-            return false; // prevent auto dismiss animation
-          },
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          secondaryBackground: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: InkWell(
->>>>>>> 961e751e6b08c048e0d05403a28d18fb9b15c002
+              if (changed == true) {
+                await loadAccount();
+                await loadRecords();
+              }
+            },
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              onTap: () async {
-                final changed = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RecordDetailsScreen(record: r),
-                  ),
-                );
-
-                if (changed == true) {
-                  await loadRecords();
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50]!.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.blue[100]!.withOpacity(0.35),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50]!.withOpacity(0.65),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.blue[100]!.withOpacity(0.35),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              const CircleAvatar(
-                                backgroundColor: Color(0xFF142752),
-                                child: Icon(Icons.work, color: Colors.white),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  r.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF142752),
-                                  ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const CircleAvatar(
+                              backgroundColor: Color(0xFF142752),
+                              child: Icon(Icons.work, color: Colors.white),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                r.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF142752),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: r.type == RecordType.income
-                                  ? Colors.green
-                                  : Colors.red,
                             ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: Text(
+                          "${r.type == RecordType.income ? '+' : '-'}₹${r.amount.toStringAsFixed(2)}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: r.type == RecordType.income
+                                ? Colors.green
+                                : Colors.red,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
+        ),
+      );
+    },
+  );
+}
   // ---------------- FAB ----------------
   Widget _fab() {
     return Container(
@@ -984,7 +936,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => AddRecordScreen(
-                                type: parsed!.type,
+                                type: parsed.type,
                                 voiceTitle: parsed.title,
                                 voiceAmount: parsed.amount,
                                 voiceCategory: parsed.category,
