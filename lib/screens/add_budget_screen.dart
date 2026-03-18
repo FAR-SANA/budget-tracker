@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/budget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   final BudgetType type;
@@ -266,22 +267,40 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     );
   }
 
-  void _save() {
-    setState(() {
-      titleError = titleCtrl.text.trim().isEmpty;
-      amountError = amountCtrl.text.trim().isEmpty;
-      startDateError = startDate == null;
+  Future<void> _save() async {
+  setState(() {
+    titleError = titleCtrl.text.trim().isEmpty;
+    amountError = amountCtrl.text.trim().isEmpty;
+    startDateError = startDate == null;
+  });
+
+  if (titleError || amountError || startDateError) return;
+
+  final supabase = Supabase.instance.client;
+  final user = supabase.auth.currentUser;
+
+  if (user == null) return;
+
+  try {
+    await supabase.from('budgets').insert({
+      'user_id': user.id,
+      'title': titleCtrl.text.trim(),
+      'target_amount': double.parse(amountCtrl.text),
+      'current_amount': 0,
+      'budget_type': selectedType.name, // saving / spending
+      'start_date': startDate!.toIso8601String().split('T').first,
+      'end_date': endDate == null
+          ? null
+          : endDate!.toIso8601String().split('T').first,
     });
 
-    if (titleError || amountError || startDateError) return;
+    if (!mounted) return;
 
-    Navigator.pop(
-      context,
-      Budget(
-        title: titleCtrl.text,
-        targetAmount: double.parse(amountCtrl.text),
-        type: selectedType,
-      ),
+    Navigator.pop(context, true); // ✅ just return success
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
     );
   }
+}
 }
