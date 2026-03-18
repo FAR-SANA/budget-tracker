@@ -57,6 +57,8 @@ String? selectedCategory;     // name for UI
   DateTime? selectedDate;
 String? selectedAccountId;
 String? selectedAccountName;
+String? selectedBudgetId;
+String? selectedBudgetTitle;
  @override
 void initState() {
   super.initState();
@@ -552,21 +554,73 @@ Future<void> _showAccountSheet() async {
     },
   );
 }
+
+Future<void> _showBudgetSheet() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  final typeFilter =
+      selectedType == RecordType.income ? "saving" : "spending";
+
+  final budgets = await Supabase.instance.client
+      .from('budgets')
+      .select()
+      .eq('user_id', user.id)
+      .eq('budget_type', typeFilter);
+
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: budgets.map<Widget>((b) {
+          return ListTile(
+            title: Text(b['title']),
+            subtitle: Text("₹${b['target_amount']}"),
+            onTap: () {
+              setState(() {
+                selectedBudgetId = b['budget_id'];
+                selectedBudgetTitle = b['title'];
+              });
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      );
+    },
+  );
+}
+
   Widget _linkBudgetButton() {
-    return Container(
+  return InkWell(
+    onTap: _showBudgetSheet,
+    child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFE3EBFD),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        children: const [
-          Expanded(child: Text("Link to a budget")),
-          Icon(Icons.keyboard_arrow_down),
+        children: [
+          Expanded(
+            child: Text(
+              selectedBudgetTitle ?? "Link to a budget",
+              style: TextStyle(
+                color: selectedBudgetTitle == null
+                    ? Colors.grey
+                    : Colors.black,
+              ),
+            ),
+          ),
+          const Icon(Icons.keyboard_arrow_down),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _bottomButtons() {
     return Row(
@@ -681,7 +735,7 @@ if (selectedType == RecordType.expense) {
     'record_date': dateStr,
     'is_recurring': false,
     'category_name': selectedCategory,
-    'budget_id': null,
+    'budget_id': selectedBudgetId,
     'recurring_rule_id': null,
   });
 
@@ -697,6 +751,28 @@ if (selectedType == RecordType.expense) {
       'amount_val': amount,
     });
   }
+  if (selectedBudgetId != null) {
+  final budgetData = await supabase
+      .from('budgets')
+      .select('current_amount')
+      .eq('budget_id', selectedBudgetId!)
+      .single();
+
+  double current = (budgetData['current_amount'] ?? 0).toDouble();
+
+  double updatedAmount;
+
+  if (selectedType == RecordType.income) {
+    updatedAmount = current + amount;
+  } else {
+    updatedAmount = current + amount; // expense also adds
+  }
+
+  await supabase
+      .from('budgets')
+      .update({'current_amount': updatedAmount})
+      .eq('budget_id', selectedBudgetId!);
+}
 
 } else {
   // ================= RECURRING RECORD =================
@@ -711,7 +787,7 @@ if (selectedType == RecordType.expense) {
       .insert({
         'user_id': user.id,
         'account_id': selectedAccountId, // ✅ FIX HERE
-        'budget_id': null,
+        'budget_id': selectedBudgetId,
         'title': titleCtrl.text.trim(),
         'amount': amount,
         'record_type': selectedType.name,
@@ -738,7 +814,7 @@ if (selectedType == RecordType.expense) {
     'record_date': dateStr,
     'is_recurring': true,
     'category_name': selectedCategory,
-    'budget_id': null,
+    'budget_id': selectedBudgetId,
     'recurring_rule_id': ruleId,
   });
 
@@ -748,7 +824,30 @@ if (selectedType == RecordType.expense) {
       'acc_id': selectedAccountId,
       'amount_val': amount,
     });
+  } 
+  if (selectedBudgetId != null) {
+  final budgetData = await supabase
+      .from('budgets')
+      .select('current_amount')
+      .eq('budget_id', selectedBudgetId!)
+      .single();
+
+  double current = (budgetData['current_amount'] ?? 0).toDouble();
+
+  double updatedAmount;
+
+  if (selectedType == RecordType.income) {
+    updatedAmount = current + amount;
   } else {
+    updatedAmount = current + amount; // expense also adds
+  }
+
+  await supabase
+      .from('budgets')
+      .update({'current_amount': updatedAmount})
+      .eq('budget_id', selectedBudgetId!);
+}
+  else {
     await supabase.rpc('decrement_balance', params: {
       'acc_id': selectedAccountId,
       'amount_val': amount,

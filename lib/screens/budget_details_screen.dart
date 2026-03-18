@@ -16,6 +16,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
 
   final titleCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
+  final currentAmountCtrl = TextEditingController();
   final startDateCtrl = TextEditingController();
   final endDateCtrl = TextEditingController();
 
@@ -28,6 +29,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     selectedType = b.type;
     titleCtrl.text = b.title;
     amountCtrl.text = b.targetAmount.toString();
+    currentAmountCtrl.text = b.currentAmount.toString();
 
     // ✅ Handle dates (ensure your Budget model has these fields)
     if (b.startDate != null) {
@@ -62,68 +64,79 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
         iconTheme: const IconThemeData(color: Color(0xFF142752)),
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _typeToggle(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _typeToggle(),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            _label("Title"),
-            _readOnlyField(titleCtrl),
+              _label("Title"),
+              _readOnlyField(titleCtrl),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            _label("Amount"),
-            _readOnlyField(amountCtrl, prefix: "₹ "),
+              _label("Target Amount"),
+              _readOnlyField(amountCtrl, prefix: "₹ "),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            _label("Start Date"),
-            _readOnlyField(startDateCtrl),
+              _label("Current Amount"),
+              _readOnlyField(currentAmountCtrl, prefix: "₹ "),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 20),
+              _label("Start Date"),
+              _readOnlyField(startDateCtrl),
 
-            _label("End Date"),
-            _readOnlyField(endDateCtrl),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 40),
+              _label("End Date"),
+              _readOnlyField(endDateCtrl),
 
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () async {
-  final updated = await Navigator.push<bool>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EditBudgetScreen(budget: widget.budget),
-    ),
-  );
+              const SizedBox(height: 40),
 
-  if (updated == true) {
-    Navigator.pop(context, true); // 🔥 THIS IS CRITICAL
-  }
-},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF142752),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final updated = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditBudgetScreen(budget: widget.budget),
+                      ),
+                    );
+
+                    if (updated == true) {
+                      Navigator.pop(context, true); // 🔥 THIS IS CRITICAL
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF142752),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  "Edit Budget",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                  child: const Text(
+                    "Edit Budget",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

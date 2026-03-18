@@ -17,6 +17,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   final amountCtrl = TextEditingController();
   final startDateCtrl = TextEditingController();
   final endDateCtrl = TextEditingController();
+  final currentAmountCtrl = TextEditingController();
 
   DateTime? startDate;
   DateTime? endDate;
@@ -72,8 +73,13 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
               if (titleError) _errorText("Title is required"),
               const SizedBox(height: 20),
 
-              _label("Amount *"),
+              _label("Target Amount *"),
               _amountField(),
+
+              const SizedBox(height: 20),
+
+              _label("Current Amount"),
+              _currentAmountField(),
               if (amountError) _errorText("Amount is required"),
               const SizedBox(height: 20),
 
@@ -167,6 +173,14 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       onChanged: (_) {
         if (amountError) setState(() => amountError = false);
       },
+    );
+  }
+
+  Widget _currentAmountField() {
+    return TextField(
+      controller: currentAmountCtrl,
+      keyboardType: TextInputType.number,
+      decoration: _inputDecoration(false, prefix: "₹ "),
     );
   }
 
@@ -268,39 +282,54 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   }
 
   Future<void> _save() async {
-  setState(() {
-    titleError = titleCtrl.text.trim().isEmpty;
-    amountError = amountCtrl.text.trim().isEmpty;
-    startDateError = startDate == null;
-  });
-
-  if (titleError || amountError || startDateError) return;
-
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
-
-  if (user == null) return;
-
-  try {
-    await supabase.from('budgets').insert({
-      'user_id': user.id,
-      'title': titleCtrl.text.trim(),
-      'target_amount': double.parse(amountCtrl.text),
-      'current_amount': 0,
-      'budget_type': selectedType.name, // saving / spending
-      'start_date': startDate!.toIso8601String().split('T').first,
-      'end_date': endDate == null
-          ? null
-          : endDate!.toIso8601String().split('T').first,
+    setState(() {
+      titleError = titleCtrl.text.trim().isEmpty;
+      amountError = amountCtrl.text.trim().isEmpty;
+      startDateError = startDate == null;
     });
 
-    if (!mounted) return;
+    if (titleError || amountError || startDateError) return;
 
-    Navigator.pop(context, true); // ✅ just return success
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    // ✅ calculate values
+    final target = double.parse(amountCtrl.text);
+
+    final current = currentAmountCtrl.text.trim().isEmpty
+        ? 0
+        : double.parse(currentAmountCtrl.text);
+
+    // ✅ validation
+    if (current > target) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Current amount cannot exceed target")),
+      );
+      return;
+    }
+
+    try {
+      await supabase.from('budgets').insert({
+        'user_id': user.id,
+        'title': titleCtrl.text.trim(),
+        'target_amount': target,
+        'current_amount': current,
+        'budget_type': selectedType.name,
+        'start_date': startDate!.toIso8601String().split('T').first,
+        'end_date': endDate == null
+            ? null
+            : endDate!.toIso8601String().split('T').first,
+      });
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
-}
 }

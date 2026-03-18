@@ -16,6 +16,7 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
 
   final titleCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
+  final currentAmountCtrl = TextEditingController();
   final startDateCtrl = TextEditingController();
   final endDateCtrl = TextEditingController();
 
@@ -31,6 +32,7 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
     selectedType = b.type;
     titleCtrl.text = b.title;
     amountCtrl.text = b.targetAmount.toString();
+    currentAmountCtrl.text = b.currentAmount.toString();
 
     startDate = b.startDate;
     endDate = b.endDate;
@@ -41,48 +43,64 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
     }
 
     if (endDate != null) {
-      endDateCtrl.text =
-          "${endDate!.day}/${endDate!.month}/${endDate!.year}";
+      endDateCtrl.text = "${endDate!.day}/${endDate!.month}/${endDate!.year}";
     }
   }
 
   // ================= UPDATE =================
 
   Future<void> saveBudget() async {
-  final supabase = Supabase.instance.client;
+    final supabase = Supabase.instance.client;
 
-  if (titleCtrl.text.trim().isEmpty ||
-      amountCtrl.text.trim().isEmpty ||
-      startDate == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please fill required fields")),
-    );
-    return;
+    if (titleCtrl.text.trim().isEmpty ||
+        amountCtrl.text.trim().isEmpty ||
+        startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill required fields")),
+      );
+      return;
+    }
+
+    try {
+      // ✅ calculate values
+      final target = double.parse(amountCtrl.text);
+
+      final current = currentAmountCtrl.text.trim().isEmpty
+          ? 0
+          : double.parse(currentAmountCtrl.text);
+
+      // ✅ validation
+      if (current > target) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Current amount cannot exceed target")),
+        );
+        return;
+      }
+
+      // ✅ update DB
+      await supabase
+          .from('budgets')
+          .update({
+            'title': titleCtrl.text.trim(),
+            'target_amount': target,
+            'current_amount': current,
+            'budget_type': selectedType.name,
+            'start_date': startDate!.toIso8601String().split('T').first,
+            'end_date': endDate == null
+                ? null
+                : endDate!.toIso8601String().split('T').first,
+          })
+          .eq('budget_id', widget.budget.id);
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
-
-  try {
-    await supabase
-        .from('budgets')
-        .update({
-          'title': titleCtrl.text.trim(),
-          'target_amount': double.parse(amountCtrl.text),
-          'budget_type': selectedType.name,
-          'start_date': startDate!.toIso8601String().split('T').first,
-          'end_date': endDate == null
-              ? null
-              : endDate!.toIso8601String().split('T').first,
-        })
-        .eq('budget_id', widget.budget.id); // 🔥 THIS IS KEY
-
-    if (!mounted) return;
-
-    Navigator.pop(context, true); // send success back
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  }
-}
 
   // ================= UI =================
 
@@ -105,67 +123,74 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
         iconTheme: const IconThemeData(color: Color(0xFF142752)),
       ),
 
-      body: SingleChildScrollView(
-  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-  child: Padding(
-    padding: EdgeInsets.fromLTRB(
-      16,
-      16,
-      16,
-      MediaQuery.of(context).viewInsets.bottom + 16,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _typeToggle(),
-
-            const SizedBox(height: 30),
-
-            _label("Title *"),
-            _editableField(titleCtrl),
-
-            const SizedBox(height: 20),
-
-            _label("Amount *"),
-            _editableField(amountCtrl, prefix: "₹ "),
-
-            const SizedBox(height: 20),
-
-            _label("Start Date *"),
-            _dateField(startDateCtrl, true),
-
-            const SizedBox(height: 20),
-
-            _label("End Date"),
-            _dateField(endDateCtrl, false),
-
-            const SizedBox(height: 40),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: saveBudget,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF142752),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  "Save Budget",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              MediaQuery.of(context).viewInsets.bottom + 16,
             ),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _typeToggle(),
+
+                const SizedBox(height: 30),
+
+                _label("Title *"),
+                _editableField(titleCtrl),
+
+                const SizedBox(height: 20),
+
+                _label("Target Amount *"),
+                _editableField(amountCtrl, prefix: "₹ "),
+
+                const SizedBox(height: 20),
+
+                _label("Current Amount"),
+                _editableField(currentAmountCtrl, prefix: "₹ "),
+
+                const SizedBox(height: 20),
+
+                _label("Start Date *"),
+                _dateField(startDateCtrl, true),
+
+                const SizedBox(height: 20),
+
+                _label("End Date"),
+                _dateField(endDateCtrl, false),
+
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: saveBudget,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF142752),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      "Save Budget",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-    )
     );
   }
 
@@ -184,8 +209,7 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
   Widget _editableField(TextEditingController ctrl, {String? prefix}) {
     return TextField(
       controller: ctrl,
-      keyboardType:
-          prefix != null ? TextInputType.number : TextInputType.text,
+      keyboardType: prefix != null ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
         prefixText: prefix,
         filled: true,
@@ -227,12 +251,10 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
       setState(() {
         if (isStart) {
           startDate = picked;
-          startDateCtrl.text =
-              "${picked.day}/${picked.month}/${picked.year}";
+          startDateCtrl.text = "${picked.day}/${picked.month}/${picked.year}";
         } else {
           endDate = picked;
-          endDateCtrl.text =
-              "${picked.day}/${picked.month}/${picked.year}";
+          endDateCtrl.text = "${picked.day}/${picked.month}/${picked.year}";
         }
       });
     }
