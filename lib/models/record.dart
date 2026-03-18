@@ -1,6 +1,7 @@
 enum RecordType { income, expense }
 
 class Record {
+  final String? budgetId;
   final String id; // ✅ add this
   final String title;
   final double amount;
@@ -11,6 +12,7 @@ class Record {
     final String accountId; 
   final String? recurringRuleId;     
   Record({
+    this.budgetId,
     required this.id,
     required this.title,
     required this.amount,

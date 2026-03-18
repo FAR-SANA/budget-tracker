@@ -24,6 +24,9 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   String? repeatType;
   late DateTime selectedDate;
 String? selectedAccountId;
+String? selectedBudgetId;
+String? selectedBudgetTitle;
+String? oldBudgetId; // 🔥 track previous budget
 List accounts = [];
 String? selectedAccountName;
   @override
@@ -45,6 +48,8 @@ String? selectedAccountName;
     repeatType = widget.record.repeatType;
     selectedDate = widget.record.date;
     selectedAccountId = widget.record.accountId;
+    oldBudgetId = widget.record.budgetId;
+  selectedBudgetId = widget.record.budgetId;
 
       _loadAccounts();
   }
@@ -476,21 +481,66 @@ Widget _repeatButton() {
       },
     );
   }
+
+Future<void> _showBudgetSheet() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  // 🔥 Filter based on record type
+  final typeFilter =
+      selectedType == RecordType.income ? "saving" : "spending";
+
+  final budgets = await Supabase.instance.client
+      .from('budgets')
+      .select()
+      .eq('user_id', user.id)
+      .eq('budget_type', typeFilter);
+
+  showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: budgets.map<Widget>((b) {
+          return ListTile(
+            title: Text(b['title']),
+            subtitle: Text("₹${b['target_amount']}"),
+            onTap: () {
+              setState(() {
+                selectedBudgetId = b['budget_id'];
+                selectedBudgetTitle = b['title'];
+              });
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      );
+    },
+  );
+}
+
   Widget _budgetButton() {
-    return Container(
+  return InkWell(
+    onTap: _showBudgetSheet,
+    child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFE3EBFD),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(child: Text("Link to a budget")),
-          Icon(Icons.keyboard_arrow_down),
+          Expanded(
+            child: Text(
+              selectedBudgetTitle ?? "Link to a budget",
+            ),
+          ),
+          const Icon(Icons.keyboard_arrow_down),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // ---------------- SAVE / CANCEL ----------------
 
@@ -534,23 +584,26 @@ Future<void> _save() async {
         .select()
         .eq('record_id', widget.record.id)
         .single();
+        oldBudgetId = oldRecord['budget_id'];
 
     final oldAmount = (oldRecord['amount'] as num).toDouble();
     final oldType = oldRecord['record_type'];
     final accountId = oldRecord['account_id'];
 
     // 🔥 2️⃣ Reverse old balance effect
-    if (oldType == 'income') {
-      await supabase.rpc('decrement_balance', params: {
-        'acc_id': accountId,
-        'amount_val': oldAmount,
-      });
-    } else {
-      await supabase.rpc('increment_balance', params: {
-        'acc_id': accountId,
-        'amount_val': oldAmount,
-      });
-    }
+    // 🔥 Reverse old account effect
+if (oldType == 'income') {
+  await supabase.rpc('decrement_balance', params: {
+    'acc_id': accountId,
+    'amount_val': oldAmount,
+  });
+} else {
+  await supabase.rpc('increment_balance', params: {
+    'acc_id': accountId,
+    'amount_val': oldAmount,
+  });
+}
+
 
     // 🔥 3️⃣ Apply new balance effect
    final newAmount = double.parse(amountCtrl.text);
@@ -561,7 +614,10 @@ if (selectedType == RecordType.income) {
     'acc_id': newAccountId,
     'amount_val': newAmount,
   });
-} else {
+}
+
+
+ else {
   await supabase.rpc('decrement_balance', params: {
     'acc_id': newAccountId,
     'amount_val': newAmount,
@@ -589,7 +645,8 @@ if (repeatType == null) {
         .from('recurring_rules')
         .insert({
           'user_id': user.id,
-          'account_id': selectedAccountId,
+          'account_id': newAccountId,
+          'budget_id': selectedBudgetId,
           'title': titleCtrl.text.trim(),
           'amount': double.parse(amountCtrl.text),
           'record_type': selectedType.name,
@@ -614,6 +671,65 @@ if (repeatType == null) {
         .eq('rule_id', recurringRuleId);
   }
 }
+
+// ================= BUDGET UPDATE =================
+
+// ================= BUDGET UPDATE =================
+
+// Case 1: Budget changed
+if (oldBudgetId != selectedBudgetId) {
+  // 🔴 Remove from old budget
+  if (oldBudgetId != null) {
+    final oldBudget = await supabase
+        .from('budgets')
+        .select('current_amount')
+        .eq('budget_id', oldBudgetId!)
+        .single();
+
+    double oldCurrent = (oldBudget['current_amount'] ?? 0).toDouble();
+
+    await supabase
+        .from('budgets')
+        .update({'current_amount': oldCurrent - oldAmount})
+        .eq('budget_id', oldBudgetId!);
+  }
+
+  // 🟢 Add to new budget
+  if (selectedBudgetId != null) {
+    final newBudget = await supabase
+        .from('budgets')
+        .select('current_amount')
+        .eq('budget_id', selectedBudgetId!)
+        .single();
+
+    double newCurrent = (newBudget['current_amount'] ?? 0).toDouble();
+
+    await supabase
+        .from('budgets')
+        .update({'current_amount': newCurrent + newAmount})
+        .eq('budget_id', selectedBudgetId!);
+  }
+}
+
+// Case 2: Same budget, amount changed
+else if (selectedBudgetId != null) {
+  final budget = await supabase
+      .from('budgets')
+      .select('current_amount')
+      .eq('budget_id', selectedBudgetId!)
+      .single();
+
+  double current = (budget['current_amount'] ?? 0).toDouble();
+
+  // 🔥 Adjust difference only
+  double updated = current - oldAmount + newAmount;
+
+  await supabase
+      .from('budgets')
+      .update({'current_amount': updated})
+      .eq('budget_id', selectedBudgetId!);
+}
+
     // 🔥 4️⃣ Update record table
     await supabase
         .from('records')
@@ -623,7 +739,8 @@ if (repeatType == null) {
           'record_date': selectedDate.toIso8601String().split('T').first,
           'record_type': selectedType.name,
           'category_name': selectedCategory,
-          'account_id': selectedAccountId,
+          'account_id': newAccountId,
+          'budget_id': selectedBudgetId,
           'is_recurring': repeatType != null,
         })
         .eq('record_id', widget.record.id)
@@ -640,7 +757,7 @@ Navigator.pop(
     date: selectedDate,
     type: selectedType,
     category: selectedCategory ?? "miscellaneous",
-    accountId: selectedAccountId!,
+    accountId: newAccountId,
     repeatType: repeatType,
   ),
 );

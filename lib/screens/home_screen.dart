@@ -226,6 +226,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (confirm != true) return;
 
+    final record = await supabase
+        .from('records')
+        .select()
+        .eq('record_id', r.id)
+        .single();
+
+    final budgetId = record['budget_id'];
+
     try {
       // 🔥 1️⃣ Get current account balance
       final accountData = await supabase
@@ -248,6 +256,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .from('accounts')
           .update({'balance': currentBalance})
           .eq('account_id', r.accountId);
+
+      // 🔥 4️⃣ UPDATE BUDGET BEFORE DELETING RECORD
+      if (r.budgetId != null) {
+        final budgetData = await supabase
+            .from('budgets')
+            .select('current_amount')
+            .eq('budget_id', r.budgetId!)
+            .single();
+
+        double currentBudget = (budgetData['current_amount'] ?? 0).toDouble();
+
+        await supabase
+            .from('budgets')
+            .update({'current_amount': currentBudget - r.amount})
+            .eq('budget_id', r.budgetId!);
+      }
+
+      // 🔥 Update budget BEFORE deleting record
+      if (budgetId != null) {
+        final budgetData = await supabase
+            .from('budgets')
+            .select('current_amount')
+            .eq('budget_id', budgetId)
+            .single();
+
+        double currentBudget = (budgetData['current_amount'] ?? 0).toDouble();
+
+        await supabase
+            .from('budgets')
+            .update({'current_amount': currentBudget - r.amount})
+            .eq('budget_id', budgetId);
+      }
 
       // 🔥 4️⃣ Delete record
       await supabase.from('records').delete().eq('record_id', r.id);

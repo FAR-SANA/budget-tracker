@@ -485,6 +485,42 @@ void _showCategorySheet() {
     );
   }
 
+  Future<void> _showBudgetSheet() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  final typeFilter =
+      selectedType == RecordType.income ? "saving" : "spending";
+
+  final budgets = await Supabase.instance.client
+      .from('budgets')
+      .select()
+      .eq('user_id', user.id)
+      .eq('budget_type', typeFilter);
+
+  showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: budgets.map<Widget>((b) {
+          return ListTile(
+            title: Text(b['title']),
+            subtitle: Text("₹${b['target_amount']}"),
+            onTap: () {
+              setState(() {
+                selectedBudgetId = b['budget_id'];
+                selectedBudgetTitle = b['title'];
+              });
+              Navigator.pop(context);
+            },
+          );
+        }).toList(),
+      );
+    },
+  );
+}
+
   // ================= UI HELPERS =================
   Widget _label(String text) =>
       Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
@@ -555,44 +591,6 @@ Future<void> _showAccountSheet() async {
   );
 }
 
-Future<void> _showBudgetSheet() async {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return;
-
-  final typeFilter =
-      selectedType == RecordType.income ? "saving" : "spending";
-
-  final budgets = await Supabase.instance.client
-      .from('budgets')
-      .select()
-      .eq('user_id', user.id)
-      .eq('budget_type', typeFilter);
-
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: budgets.map<Widget>((b) {
-          return ListTile(
-            title: Text(b['title']),
-            subtitle: Text("₹${b['target_amount']}"),
-            onTap: () {
-              setState(() {
-                selectedBudgetId = b['budget_id'];
-                selectedBudgetTitle = b['title'];
-              });
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      );
-    },
-  );
-}
 
   Widget _linkBudgetButton() {
   return InkWell(
