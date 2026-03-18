@@ -5,6 +5,7 @@ import 'edit_profile_screen.dart';
 import 'accounts/all_accounts_screen.dart';
 import 'change_password_screen.dart';
 import '../services/sms_service.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -264,18 +265,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                       title: Text("Terms Of Use"),
                       trailing: Icon(Icons.arrow_forward_ios, size: 16),
                     ),
-                    const ListTile(
-                      leading: Icon(Icons.logout, color: Colors.red),
-                      title: Text(
-                        "Logout",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      trailing: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Colors.red,
-                      ),
-                    ),
+                    ListTile(
+  leading: const Icon(Icons.logout, color: Colors.red),
+  title: const Text(
+    "Logout",
+    style: TextStyle(color: Colors.red),
+  ),
+  trailing: const Icon(
+    Icons.arrow_forward_ios,
+    size: 16,
+    color: Colors.red,
+  ),
+  onTap: _handleLogout, // 👈 ADD THIS
+),
                   ],
                 ),
               ),
@@ -328,4 +330,43 @@ Future<void> _enableSmsTracking() async {
     );
   }
 }
+
+Future<void> _handleLogout() async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Logout"),
+      content: const Text("Are you sure you want to logout?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text("Logout"),
+        ),
+      ],
+    ),
+  );
+
+  if (confirm != true) return;
+
+  try {
+    await Supabase.instance.client.auth.signOut();
+
+    if (!mounted) return;
+
+    // 🔥 IMPORTANT: Clear all screens and go to login
+    Navigator.of(context).pushAndRemoveUntil(
+  MaterialPageRoute(builder: (_) => const LoginScreen()),
+  (route) => false,
+);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Logout failed: $e")),
+    );
+  }
+}
+
 }
