@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/record.dart';
+import '../theme/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditRecordScreen extends StatefulWidget {
@@ -23,12 +24,12 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   String? selectedCategory;
   String? repeatType;
   late DateTime selectedDate;
-String? selectedAccountId;
-String? selectedBudgetId;
-String? selectedBudgetTitle;
-String? oldBudgetId; // 🔥 track previous budget
-List accounts = [];
-String? selectedAccountName;
+  String? selectedAccountId;
+  String? selectedBudgetId;
+  String? selectedBudgetTitle;
+  String? oldBudgetId; // 🔥 track previous budget
+  List accounts = [];
+  String? selectedAccountName;
   @override
   void initState() {
     super.initState();
@@ -49,46 +50,46 @@ String? selectedAccountName;
     selectedDate = widget.record.date;
     selectedAccountId = widget.record.accountId;
     oldBudgetId = widget.record.budgetId;
-  selectedBudgetId = widget.record.budgetId;
+    selectedBudgetId = widget.record.budgetId;
 
-      _loadAccounts();
+    _loadAccounts();
   }
 
   Future<void> _loadAccounts() async {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
 
-  final data = await Supabase.instance.client
-      .from('accounts')
-      .select()
-      .eq('user_id', user.id);
+    final data = await Supabase.instance.client
+        .from('accounts')
+        .select()
+        .eq('user_id', user.id);
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() {
-    accounts = data;
+    setState(() {
+      accounts = data;
 
-    for (var acc in accounts) {
-      if (acc['account_id'] == selectedAccountId) {
-        selectedAccountName = acc['name'];
-        break;
+      for (var acc in accounts) {
+        if (acc['account_id'] == selectedAccountId) {
+          selectedAccountName = acc['name'];
+          break;
+        }
       }
-    }
-  });
-}
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
         title: const Text("Edit Record"),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF142752)),
-        titleTextStyle: const TextStyle(
-          color: Color(0xFF142752),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
+        titleTextStyle: TextStyle(
+          color: AppColors.text(context),
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
@@ -162,18 +163,19 @@ String? selectedAccountName;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => selectedType = type),
-        child: Container(
-          padding: const EdgeInsets.all(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF142752) : const Color(0xFFE3EBFD),
+            color: active ? AppColors.primary(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Text(
               text,
               style: TextStyle(
-                color: active ? Colors.white : Colors.grey,
-                fontWeight: FontWeight.bold,
+                color: active ? Colors.white : AppColors.subText(context),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -184,8 +186,13 @@ String? selectedAccountName;
 
   // ---------------- INPUTS ----------------
 
-  Widget _label(String text) =>
-      Text(text, style: const TextStyle(fontWeight: FontWeight.w500));
+  Widget _label(String text) => Text(
+    text,
+    style: TextStyle(
+      fontWeight: FontWeight.w500,
+      color: AppColors.text(context),
+    ),
+  );
 
   // ✅ UPDATED: Allows decimals
   Widget _input(TextEditingController ctrl, {String? prefix}) {
@@ -208,7 +215,7 @@ String? selectedAccountName;
       decoration: InputDecoration(
         prefixText: prefix,
         filled: true,
-        fillColor: const Color(0xFFE3EBFD),
+        fillColor: AppColors.incomeCard(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -222,10 +229,11 @@ String? selectedAccountName;
       controller: dateCtrl,
       readOnly: true,
       onTap: _pickDate,
+      style: TextStyle(color: AppColors.text(context)),
       decoration: InputDecoration(
-        suffixIcon: const Icon(Icons.calendar_today),
+        suffixIcon: Icon(Icons.calendar_today, color: AppColors.text(context)),
         filled: true,
-        fillColor: const Color(0xFFE3EBFD),
+        fillColor: AppColors.incomeCard(context), // ✅ FIXED
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -252,197 +260,207 @@ String? selectedAccountName;
 
   // ---------------- BUTTONS ----------------
 
- Widget _accountButton() {
-  return GestureDetector(
-    onTap: _showAccountSheet,
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF142752),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          selectedAccountName ?? "Select account",
-          style: const TextStyle(color: Colors.white),
+  Widget _accountButton() {
+    return GestureDetector(
+      onTap: _showAccountSheet,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.primary(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            selectedAccountName ?? "Select account",
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-void _showAccountSheet() {
-  showModalBottomSheet(
-    context: context,
-    builder: (_) {
-      return ListView(
-        padding: const EdgeInsets.all(20),
-        children: accounts.map((acc) {
-          return ListTile(
-            title: Text(acc['name']),
-            onTap: () {
-              setState(() {
-                selectedAccountId = acc['account_id'];
-                selectedAccountName = acc['name'];
-              });
+  void _showAccountSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: accounts.map((acc) {
+            return ListTile(
+              title: Text(acc['name']),
+              onTap: () {
+                setState(() {
+                  selectedAccountId = acc['account_id'];
+                  selectedAccountName = acc['name'];
+                });
 
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      );
-    },
-  );
-}
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 
-Widget _categoryButton() {
-  return InkWell(
-    onTap: _showCategorySheet, // ✅ you must create this function
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          selectedCategory == null
-              ? const Icon(Icons.wallet, size: 20, color: Colors.grey)
-              : Image.asset(
-                  "assets/icons/categories/$selectedCategory.png",
-                  width: 20,
-                  height: 20,
-                ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              selectedCategory ?? "Category",
-              overflow: TextOverflow.ellipsis,
+  Widget _categoryButton() {
+    return InkWell(
+      onTap: _showCategorySheet, // ✅ you must create this function
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.incomeCard(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            selectedCategory == null
+                ? Icon(
+                    Icons.wallet,
+                    size: 20,
+                    color: AppColors.subText(context),
+                  )
+                : Image.asset(
+                    "assets/icons/categories/$selectedCategory.png",
+                    width: 20,
+                    height: 20,
+                  ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                selectedCategory ?? "Category",
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          const Icon(Icons.keyboard_arrow_down),
-        ],
+            const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-void _showCategorySheet() {
-  final categories = [
-    "miscellaneous",
-    "entertainment",
-    "household",
-    "transport",
-    "shopping",
-    "education",
-    "health",
-    "salary",
-    "food",
-  ];
+  void _showCategorySheet() {
+    final categories = [
+      "miscellaneous",
+      "entertainment",
+      "household",
+      "transport",
+      "shopping",
+      "education",
+      "health",
+      "salary",
+      "food",
+    ];
 
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (_) {
-      return Stack(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(color: Colors.transparent),
-          ),
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 320,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 10),
-                  ],
-                ),
-                child: SizedBox(
-                  height: 280,
-                  child: GridView.builder(
-                    itemCount: categories.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                    ),
-                    itemBuilder: (_, index) {
-                      final name = categories[index];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(color: Colors.transparent),
+            ),
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 320,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.background(context),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black26, blurRadius: 10),
+                    ],
+                  ),
+                  child: SizedBox(
+                    height: 280,
+                    child: GridView.builder(
+                      itemCount: categories.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                          ),
+                      itemBuilder: (_, index) {
+                        final name = categories[index];
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedCategory = name;
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 26,
-                              backgroundColor: Colors.indigo,
-                              child: Image.asset(
-                                "assets/icons/categories/$name.png",
-                                width: 28,
-                                height: 28,
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedCategory = name;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 26,
+                                backgroundColor: AppColors.primary(context),
+                                child: Image.asset(
+                                  "assets/icons/categories/$name.png",
+                                  width: 28,
+                                  height: 28,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                              const SizedBox(height: 6),
+                              Text(
+                                name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.text(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
-Widget _repeatButton() {
-  return InkWell(
-    onTap: _showRepeatSheet, // ✅ you must create this function
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
-        borderRadius: BorderRadius.circular(12),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _repeatButton() {
+    return InkWell(
+      onTap: _showRepeatSheet, // ✅ you must create this function
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.incomeCard(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              repeatType == null
+                  ? Icons.radio_button_unchecked
+                  : Icons.check_circle,
+              color: AppColors.text(context),
+            ),
+            const SizedBox(width: 6),
+            Expanded(child: Text(repeatType ?? "Repeat")),
+            const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Icon(
-            repeatType == null ? Icons.radio_button_unchecked : Icons.check_circle,
-            color: const Color(0xFF142752),
-          ),
-          const SizedBox(width: 6),
-          Expanded(child: Text(repeatType ?? "Repeat")),
-          const Icon(Icons.keyboard_arrow_down),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   void _showRepeatSheet() {
     final options = ["Never", "Daily", "Weekly", "Monthly", "Yearly"];
@@ -456,7 +474,7 @@ Widget _repeatButton() {
           child: Container(
             width: 280,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.background(context),
               borderRadius: BorderRadius.circular(20),
               boxShadow: const [
                 BoxShadow(color: Colors.black26, blurRadius: 10),
@@ -482,65 +500,71 @@ Widget _repeatButton() {
     );
   }
 
-Future<void> _showBudgetSheet() async {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return;
+  Future<void> _showBudgetSheet() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
 
-  // 🔥 Filter based on record type
-  final typeFilter =
-      selectedType == RecordType.income ? "saving" : "spending";
+    // 🔥 Filter based on record type
+    final typeFilter = selectedType == RecordType.income
+        ? "saving"
+        : "spending";
 
-  final budgets = await Supabase.instance.client
-      .from('budgets')
-      .select()
-      .eq('user_id', user.id)
-      .eq('budget_type', typeFilter);
+    final budgets = await Supabase.instance.client
+        .from('budgets')
+        .select()
+        .eq('user_id', user.id)
+        .eq('budget_type', typeFilter);
 
-  showModalBottomSheet(
-    context: context,
-    builder: (_) {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: budgets.map<Widget>((b) {
-          return ListTile(
-            title: Text(b['title']),
-            subtitle: Text("₹${b['target_amount']}"),
-            onTap: () {
-              setState(() {
-                selectedBudgetId = b['budget_id'];
-                selectedBudgetTitle = b['title'];
-              });
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      );
-    },
-  );
-}
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: budgets.map<Widget>((b) {
+            return ListTile(
+              title: Text(b['title']),
+              subtitle: Text("₹${b['target_amount']}"),
+              onTap: () {
+                setState(() {
+                  selectedBudgetId = b['budget_id'];
+                  selectedBudgetTitle = b['title'];
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 
   Widget _budgetButton() {
-  return InkWell(
-    onTap: _showBudgetSheet,
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              selectedBudgetTitle ?? "Link to a budget",
+    return InkWell(
+      onTap: _showBudgetSheet,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.incomeCard(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                selectedBudgetTitle ?? "Link to a budget",
+                style: TextStyle(
+                  color: selectedBudgetTitle == null
+                      ? AppColors.subText(context)
+                      : AppColors.text(context),
+                ),
+              ),
             ),
-          ),
-          const Icon(Icons.keyboard_arrow_down),
-        ],
+            const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // ---------------- SAVE / CANCEL ----------------
 
@@ -556,7 +580,7 @@ Future<void> _showBudgetSheet() async {
         ElevatedButton(
           onPressed: _save,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF142752),
+            backgroundColor: AppColors.primary(context),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -570,203 +594,199 @@ Future<void> _showBudgetSheet() async {
       ],
     );
   }
-Future<void> _save() async {
-  if (!_formKey.currentState!.validate()) return;
 
-  final supabase = Supabase.instance.client;
-  final user = supabase.auth.currentUser;
-  if (user == null) return;
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  try {
-    // 🔥 1️⃣ Get old record from database
-    final oldRecord = await supabase
-        .from('records')
-        .select()
-        .eq('record_id', widget.record.id)
-        .single();
-        oldBudgetId = oldRecord['budget_id'];
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-    final oldAmount = (oldRecord['amount'] as num).toDouble();
-    final oldType = oldRecord['record_type'];
-    final accountId = oldRecord['account_id'];
+    try {
+      // 🔥 1️⃣ Get old record from database
+      final oldRecord = await supabase
+          .from('records')
+          .select()
+          .eq('record_id', widget.record.id)
+          .single();
+      oldBudgetId = oldRecord['budget_id'];
 
-    // 🔥 2️⃣ Reverse old balance effect
-    // 🔥 Reverse old account effect
-if (oldType == 'income') {
-  await supabase.rpc('decrement_balance', params: {
-    'acc_id': accountId,
-    'amount_val': oldAmount,
-  });
-} else {
-  await supabase.rpc('increment_balance', params: {
-    'acc_id': accountId,
-    'amount_val': oldAmount,
-  });
-}
+      final oldAmount = (oldRecord['amount'] as num).toDouble();
+      final oldType = oldRecord['record_type'];
+      final accountId = oldRecord['account_id'];
 
+      // 🔥 2️⃣ Reverse old balance effect
+      // 🔥 Reverse old account effect
+      if (oldType == 'income') {
+        await supabase.rpc(
+          'decrement_balance',
+          params: {'acc_id': accountId, 'amount_val': oldAmount},
+        );
+      } else {
+        await supabase.rpc(
+          'increment_balance',
+          params: {'acc_id': accountId, 'amount_val': oldAmount},
+        );
+      }
 
-    // 🔥 3️⃣ Apply new balance effect
-   final newAmount = double.parse(amountCtrl.text);
-final newAccountId = selectedAccountId ?? accountId;
+      // 🔥 3️⃣ Apply new balance effect
+      final newAmount = double.parse(amountCtrl.text);
+      final newAccountId = selectedAccountId ?? accountId;
 
-if (selectedType == RecordType.income) {
-  await supabase.rpc('increment_balance', params: {
-    'acc_id': newAccountId,
-    'amount_val': newAmount,
-  });
-}
+      if (selectedType == RecordType.income) {
+        await supabase.rpc(
+          'increment_balance',
+          params: {'acc_id': newAccountId, 'amount_val': newAmount},
+        );
+      } else {
+        await supabase.rpc(
+          'decrement_balance',
+          params: {'acc_id': newAccountId, 'amount_val': newAmount},
+        );
+      }
 
+      String? recurringRuleId = widget.record.recurringRuleId;
 
- else {
-  await supabase.rpc('decrement_balance', params: {
-    'acc_id': newAccountId,
-    'amount_val': newAmount,
-  });
-}
+      if (repeatType == null) {
+        // 🔴 User selected "Never"
+        if (recurringRuleId != null) {
+          await supabase
+              .from('recurring_rules')
+              .update({'is_active': false})
+              .eq('rule_id', recurringRuleId);
+        }
 
-String? recurringRuleId = widget.record.recurringRuleId;
+        recurringRuleId = null;
+      } else {
+        final freq = repeatType!.toLowerCase();
 
-if (repeatType == null) {
-  // 🔴 User selected "Never"
-  if (recurringRuleId != null) {
-    await supabase
-        .from('recurring_rules')
-        .update({'is_active': false})
-        .eq('rule_id', recurringRuleId);
+        if (recurringRuleId == null) {
+          // 🟢 create new rule
+          final rule = await supabase
+              .from('recurring_rules')
+              .insert({
+                'user_id': user.id,
+                'account_id': newAccountId,
+                'budget_id': selectedBudgetId,
+                'title': titleCtrl.text.trim(),
+                'amount': double.parse(amountCtrl.text),
+                'record_type': selectedType.name,
+                'category_name': selectedCategory,
+                'frequency': freq,
+                'interval': 1,
+                'start_date': selectedDate.toIso8601String().split('T').first,
+                'next_run_date': selectedDate
+                    .toIso8601String()
+                    .split('T')
+                    .first,
+                'is_active': true,
+              })
+              .select()
+              .single();
+
+          recurringRuleId = rule['rule_id'];
+        } else {
+          // 🔵 update existing rule
+          await supabase
+              .from('recurring_rules')
+              .update({'frequency': freq})
+              .eq('rule_id', recurringRuleId);
+        }
+      }
+
+      // ================= BUDGET UPDATE =================
+
+      // ================= BUDGET UPDATE =================
+
+      // Case 1: Budget changed
+      if (oldBudgetId != selectedBudgetId) {
+        // 🔴 Remove from old budget
+        if (oldBudgetId != null) {
+          final oldBudget = await supabase
+              .from('budgets')
+              .select('current_amount')
+              .eq('budget_id', oldBudgetId!)
+              .single();
+
+          double oldCurrent = (oldBudget['current_amount'] ?? 0).toDouble();
+
+          await supabase
+              .from('budgets')
+              .update({'current_amount': oldCurrent - oldAmount})
+              .eq('budget_id', oldBudgetId!);
+        }
+
+        // 🟢 Add to new budget
+        if (selectedBudgetId != null) {
+          final newBudget = await supabase
+              .from('budgets')
+              .select('current_amount')
+              .eq('budget_id', selectedBudgetId!)
+              .single();
+
+          double newCurrent = (newBudget['current_amount'] ?? 0).toDouble();
+
+          await supabase
+              .from('budgets')
+              .update({'current_amount': newCurrent + newAmount})
+              .eq('budget_id', selectedBudgetId!);
+        }
+      }
+      // Case 2: Same budget, amount changed
+      else if (selectedBudgetId != null) {
+        final budget = await supabase
+            .from('budgets')
+            .select('current_amount')
+            .eq('budget_id', selectedBudgetId!)
+            .single();
+
+        double current = (budget['current_amount'] ?? 0).toDouble();
+
+        // 🔥 Adjust difference only
+        double updated = current - oldAmount + newAmount;
+
+        await supabase
+            .from('budgets')
+            .update({'current_amount': updated})
+            .eq('budget_id', selectedBudgetId!);
+      }
+
+      // 🔥 4️⃣ Update record table
+      await supabase
+          .from('records')
+          .update({
+            'title': titleCtrl.text.trim(),
+            'amount': newAmount,
+            'record_date': selectedDate.toIso8601String().split('T').first,
+            'record_type': selectedType.name,
+            'category_name': selectedCategory,
+            'account_id': newAccountId,
+            'budget_id': selectedBudgetId,
+            'is_recurring': repeatType != null,
+          })
+          .eq('record_id', widget.record.id)
+          .eq('user_id', user.id);
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        Record(
+          id: widget.record.id,
+          title: titleCtrl.text.trim(),
+          amount: newAmount,
+          date: selectedDate,
+          type: selectedType,
+          category: selectedCategory ?? "miscellaneous",
+          accountId: newAccountId,
+          repeatType: repeatType,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
-
-  recurringRuleId = null;
-} else {
-  final freq = repeatType!.toLowerCase();
-
-  if (recurringRuleId == null) {
-    // 🟢 create new rule
-    final rule = await supabase
-        .from('recurring_rules')
-        .insert({
-          'user_id': user.id,
-          'account_id': newAccountId,
-          'budget_id': selectedBudgetId,
-          'title': titleCtrl.text.trim(),
-          'amount': double.parse(amountCtrl.text),
-          'record_type': selectedType.name,
-          'category_name': selectedCategory,
-          'frequency': freq,
-          'interval': 1,
-          'start_date': selectedDate.toIso8601String().split('T').first,
-          'next_run_date': selectedDate.toIso8601String().split('T').first,
-          'is_active': true,
-        })
-        .select()
-        .single();
-
-    recurringRuleId = rule['rule_id'];
-  } else {
-    // 🔵 update existing rule
-    await supabase
-        .from('recurring_rules')
-        .update({
-          'frequency': freq,
-        })
-        .eq('rule_id', recurringRuleId);
-  }
-}
-
-// ================= BUDGET UPDATE =================
-
-// ================= BUDGET UPDATE =================
-
-// Case 1: Budget changed
-if (oldBudgetId != selectedBudgetId) {
-  // 🔴 Remove from old budget
-  if (oldBudgetId != null) {
-    final oldBudget = await supabase
-        .from('budgets')
-        .select('current_amount')
-        .eq('budget_id', oldBudgetId!)
-        .single();
-
-    double oldCurrent = (oldBudget['current_amount'] ?? 0).toDouble();
-
-    await supabase
-        .from('budgets')
-        .update({'current_amount': oldCurrent - oldAmount})
-        .eq('budget_id', oldBudgetId!);
-  }
-
-  // 🟢 Add to new budget
-  if (selectedBudgetId != null) {
-    final newBudget = await supabase
-        .from('budgets')
-        .select('current_amount')
-        .eq('budget_id', selectedBudgetId!)
-        .single();
-
-    double newCurrent = (newBudget['current_amount'] ?? 0).toDouble();
-
-    await supabase
-        .from('budgets')
-        .update({'current_amount': newCurrent + newAmount})
-        .eq('budget_id', selectedBudgetId!);
-  }
-}
-
-// Case 2: Same budget, amount changed
-else if (selectedBudgetId != null) {
-  final budget = await supabase
-      .from('budgets')
-      .select('current_amount')
-      .eq('budget_id', selectedBudgetId!)
-      .single();
-
-  double current = (budget['current_amount'] ?? 0).toDouble();
-
-  // 🔥 Adjust difference only
-  double updated = current - oldAmount + newAmount;
-
-  await supabase
-      .from('budgets')
-      .update({'current_amount': updated})
-      .eq('budget_id', selectedBudgetId!);
-}
-
-    // 🔥 4️⃣ Update record table
-    await supabase
-        .from('records')
-        .update({
-          'title': titleCtrl.text.trim(),
-          'amount': newAmount,
-          'record_date': selectedDate.toIso8601String().split('T').first,
-          'record_type': selectedType.name,
-          'category_name': selectedCategory,
-          'account_id': newAccountId,
-          'budget_id': selectedBudgetId,
-          'is_recurring': repeatType != null,
-        })
-        .eq('record_id', widget.record.id)
-        .eq('user_id', user.id);
-
-    if (!mounted) return;
-
-Navigator.pop(
-  context,
-  Record(
-    id: widget.record.id,
-    title: titleCtrl.text.trim(),
-    amount: newAmount,
-    date: selectedDate,
-    type: selectedType,
-    category: selectedCategory ?? "miscellaneous",
-    accountId: newAccountId,
-    repeatType: repeatType,
-  ),
-);
-
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  }
-}
 }

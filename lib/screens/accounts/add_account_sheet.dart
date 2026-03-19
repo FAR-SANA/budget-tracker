@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../theme/app_colors.dart';
 
 class AddAccountSheet extends StatefulWidget {
   const AddAccountSheet({super.key});
@@ -22,7 +23,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
       'balance': double.parse(amountController.text.trim()),
     });
 
-   Navigator.pop(context, true);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -32,12 +33,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
       child: Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(
-            255,
-            255,
-            255,
-            255,
-          ), // your light overlay background
+          color: AppColors.background(context), // your light overlay background
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -46,18 +42,18 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
             children: [
               // 🔹 Back Arrow
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
                 onPressed: () => Navigator.pop(context),
               ),
 
               // 🔹 Title
-              const Center(
+              Center(
                 child: Text(
                   "Add Account",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B5D),
+                    color: AppColors.text(context),
                   ),
                 ),
               ),
@@ -65,23 +61,24 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
               const SizedBox(height: 35),
 
               // 🔹 Account Name
-              const Text(
+              Text(
                 "Account Name:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
 
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: AppColors.text(context)), // ✅ ADD
+                  decoration: InputDecoration(
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),
@@ -92,25 +89,29 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
               const SizedBox(height: 10),
 
               // 🔹 Amount
-              const Text(
+              Text(
                 "Amount:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
 
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: AppColors.text(context)), // ✅ ADD
+                  decoration: InputDecoration(
                     prefixText: "₹ ",
+                    prefixStyle: TextStyle(
+                      color: AppColors.text(context),
+                    ), // ✅ ADD
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),
@@ -127,7 +128,7 @@ class _AddAccountSheetState extends State<AddAccountSheet> {
                 child: ElevatedButton(
                   onPressed: createAccount,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A2B5D),
+                    backgroundColor: AppColors.primary(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

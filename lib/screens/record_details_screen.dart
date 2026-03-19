@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/record.dart';
 import 'edit_record_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_colors.dart';
 
 class RecordDetailsScreen extends StatefulWidget {
   final Record record;
@@ -13,84 +14,86 @@ class RecordDetailsScreen extends StatefulWidget {
 }
 
 class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
-String? repeatType;
+  String? repeatType;
   String? accountName;
 
   @override
   void initState() {
     super.initState();
     _loadAccount();
-     _loadRepeatType();
+    _loadRepeatType();
   }
+
   Future<void> _loadRepeatType() async {
-  if (widget.record.recurringRuleId == null) {
-    setState(() {
-      repeatType = null;
-    });
-    return;
-  }
+    if (widget.record.recurringRuleId == null) {
+      setState(() {
+        repeatType = null;
+      });
+      return;
+    }
 
-  final data = await Supabase.instance.client
-      .from('recurring_rules')
-      .select('frequency')
-     .eq('rule_id', widget.record.recurringRuleId!)
-      .single();
-
-  if (!mounted) return;
-
-  setState(() {
-    repeatType = data['frequency'];
-  });
-}
-
-Future<void> _loadAccount() async {
-  try {
     final data = await Supabase.instance.client
-        .from('accounts')
-        .select('name')
-        .eq('account_id', widget.record.accountId)
+        .from('recurring_rules')
+        .select('frequency')
+        .eq('rule_id', widget.record.recurringRuleId!)
         .single();
 
     if (!mounted) return;
 
     setState(() {
-      accountName = data['name'];
+      repeatType = data['frequency'];
     });
-  } catch (e) {
-    if (!mounted) return;
+  }
 
-    setState(() {
-      accountName = "Unknown Account";
-    });
+  Future<void> _loadAccount() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('accounts')
+          .select('name')
+          .eq('account_id', widget.record.accountId)
+          .single();
+
+      if (!mounted) return;
+
+      setState(() {
+        accountName = data['name'];
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        accountName = "Unknown Account";
+      });
+    }
   }
-}
-String getRepeatLabel(String? repeat) {
-  switch (repeat) {
-    case 'daily':
-      return 'Daily';
-    case 'weekly':
-      return 'Weekly';
-    case 'monthly':
-      return 'Monthly';
-    case 'yearly':
-      return 'Yearly';
-    default:
-      return 'Never';
+
+  String getRepeatLabel(String? repeat) {
+    switch (repeat) {
+      case 'daily':
+        return 'Daily';
+      case 'weekly':
+        return 'Weekly';
+      case 'monthly':
+        return 'Monthly';
+      case 'yearly':
+        return 'Yearly';
+      default:
+        return 'Never';
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Record Details",
-          style: TextStyle(color: Color(0xFF142752)),
+          style: TextStyle(color: AppColors.text(context)),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF142752)),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
         centerTitle: true,
       ),
 
@@ -103,23 +106,25 @@ String getRepeatLabel(String? repeat) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _label("Transaction Type"),
-            _value(widget.record.type == RecordType.income ? "Income" : "Expense"),
+              _value(
+                widget.record.type == RecordType.income ? "Income" : "Expense",
+              ),
 
               const SizedBox(height: 16),
 
               _label("Title"),
-             _value(widget.record.title),
+              _value(widget.record.title),
 
               const SizedBox(height: 16),
 
               _label("Amount"),
-             _value("₹ ${widget.record.amount.toStringAsFixed(0)}"),
+              _value("₹ ${widget.record.amount.toStringAsFixed(0)}"),
 
               const SizedBox(height: 16),
 
               _label("Date"),
               _value(
-               "${widget.record.date.day}/${widget.record.date.month}/${widget.record.date.year}",
+                "${widget.record.date.day}/${widget.record.date.month}/${widget.record.date.year}",
               ),
 
               const SizedBox(height: 20),
@@ -129,18 +134,18 @@ String getRepeatLabel(String? repeat) {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF142752),
+                  color: AppColors.primary(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-             child: Center(
-  child: Text(
-    accountName ?? "Loading...",
-    style: const TextStyle(
-      color: Colors.white,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-),
+                child: Center(
+                  child: Text(
+                    accountName ?? "Loading...",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -156,7 +161,7 @@ String getRepeatLabel(String? repeat) {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE3EBFD),
+                        color: AppColors.incomeCard(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -169,7 +174,7 @@ String getRepeatLabel(String? repeat) {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                             widget.record.category,
+                              widget.record.category,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -192,7 +197,7 @@ String getRepeatLabel(String? repeat) {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE3EBFD),
+                        color: AppColors.incomeCard(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -201,22 +206,24 @@ String getRepeatLabel(String? repeat) {
                             padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color:widget.record.repeatType == null
+                              color: widget.record.repeatType == null
                                   ? Colors.transparent
-                                  : Colors.indigo.withOpacity(0.15),
+                                  : AppColors.primary(
+                                      context,
+                                    ).withOpacity(0.15),
                             ),
                             child: Icon(
                               widget.record.repeatType == null
                                   ? Icons.radio_button_unchecked
                                   : Icons.check_circle,
                               size: 20,
-                              color: const Color(0xFF142752),
+                              color: AppColors.text(context),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                     getRepeatLabel(repeatType),
+                              getRepeatLabel(repeatType),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -233,7 +240,7 @@ String getRepeatLabel(String? repeat) {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3EBFD),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -249,20 +256,24 @@ String getRepeatLabel(String? repeat) {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-               onPressed: () async {
-  final updated = await Navigator.push<Record?>(
-    context,
-    MaterialPageRoute(
-     builder: (_) => EditRecordScreen(record: widget.record),
-    ),
-  );
+                  onPressed: () async {
+                    final updated = await Navigator.push<Record?>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditRecordScreen(record: widget.record),
+                      ),
+                    );
 
-  if (!context.mounted) return; // ✅ prevents async context issue
+                    if (!context.mounted)
+                      return; // ✅ prevents async context issue
 
-  if (updated != null) {
-    Navigator.pop(context, true); // ✅ tell Home "record changed"
-  }
-},
+                    if (updated != null) {
+                      Navigator.pop(
+                        context,
+                        true,
+                      ); // ✅ tell Home "record changed"
+                    }
+                  },
                   icon: const Icon(Icons.edit, color: Colors.white),
                   label: const Text(
                     "Edit Record",
@@ -288,7 +299,10 @@ String getRepeatLabel(String? repeat) {
   }
 
   Widget _label(String text) {
-    return Text(text, style: const TextStyle(color: Colors.grey, fontSize: 13));
+    return Text(
+      text,
+      style: TextStyle(color: AppColors.subText(context), fontSize: 13),
+    );
   }
 
   Widget _value(String text) {
@@ -296,12 +310,16 @@ String getRepeatLabel(String? repeat) {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EEFF),
+        color: AppColors.incomeCard(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppColors.text(context),
+        ),
       ),
     );
   }

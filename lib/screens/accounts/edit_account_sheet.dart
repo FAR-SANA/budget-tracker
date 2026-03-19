@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../theme/app_colors.dart';
 
 class EditAccountSheet extends StatefulWidget {
   final Map account;
@@ -24,23 +24,23 @@ class _EditAccountSheetState extends State<EditAccountSheet> {
     );
   }
 
-Future<void> saveAccount() async {
-  final updatedData = {
-    'account_id': widget.account['account_id'],
-    'name': nameController.text.trim(),
-    'balance': double.parse(amountController.text.trim()),
-  };
+  Future<void> saveAccount() async {
+    final updatedData = {
+      'account_id': widget.account['account_id'],
+      'name': nameController.text.trim(),
+      'balance': double.parse(amountController.text.trim()),
+    };
 
-  await Supabase.instance.client
-      .from('accounts')
-      .update({
-        'name': updatedData['name'],
-        'balance': updatedData['balance'],
-      })
-      .eq('account_id', widget.account['account_id']);
+    await Supabase.instance.client
+        .from('accounts')
+        .update({
+          'name': updatedData['name'],
+          'balance': updatedData['balance'],
+        })
+        .eq('account_id', widget.account['account_id']);
 
-  Navigator.pop(context, updatedData); // ✅ return updated map
-}
+    Navigator.pop(context, updatedData); // ✅ return updated map
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +48,9 @@ Future<void> saveAccount() async {
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Color.fromARGB(255, 255, 255, 255),
+        decoration: BoxDecoration(
+          color: AppColors.background(context),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -58,18 +59,18 @@ Future<void> saveAccount() async {
             children: [
               // 🔹 Back Arrow
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
                 onPressed: () => Navigator.pop(context),
               ),
 
               // 🔹 Title
-              const Center(
+              Center(
                 child: Text(
                   "Edit Account",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B5D),
+                    color: AppColors.text(context),
                   ),
                 ),
               ),
@@ -77,16 +78,16 @@ Future<void> saveAccount() async {
               const SizedBox(height: 35),
 
               // 🔹 Account Name
-              const Text(
+              Text(
                 "Account Name:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
 
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
@@ -104,16 +105,16 @@ Future<void> saveAccount() async {
               const SizedBox(height: 10),
 
               // 🔹 Amount
-              const Text(
+              Text(
                 "Amount:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
 
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
@@ -139,7 +140,7 @@ Future<void> saveAccount() async {
                 child: ElevatedButton(
                   onPressed: saveAccount,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A2B5D),
+                    backgroundColor: AppColors.primary(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

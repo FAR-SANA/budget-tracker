@@ -6,6 +6,10 @@ import 'accounts/all_accounts_screen.dart';
 import 'change_password_screen.dart';
 import '../services/sms_service.dart';
 import 'login_screen.dart';
+import '../theme/app_colors.dart';
+import 'terms_of_use_screen.dart';
+import 'package:provider/provider.dart';
+import '../theme/theme_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -40,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (state == AppLifecycleState.resumed && _openedSettings) {
       _openedSettings = false;
 
-      // We only re-check silently (no snackbar)
+      if (!mounted) return;
       _checkPermissionStatus();
     }
   }
@@ -61,8 +65,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           .eq('id', uid)
           .maybeSingle();
 
+      if (!mounted) return;
+
       setState(() {
-        name = data?['name'] ?? ""; // ✅ SAFE NULL CHECK
+        name = data?['name'] ?? "";
         userId = uid;
         isLoading = false;
       });
@@ -76,26 +82,29 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _handleNotification() async {
     _openedSettings = true;
     await openAppSettings();
+
+    if (!mounted) return;
   }
 
   // Silent permission check (no UI feedback)
   Future<void> _checkPermissionStatus() async {
     await Permission.notification.status;
     // Intentionally no snackbar or UI change
+    if (!mounted) return;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background(context),
         elevation: 0,
         scrolledUnderElevation: 0, // ✅ ADD THIS
-        surfaceTintColor: Colors.white, // ✅ ADD THIS
+        surfaceTintColor: AppColors.background(context), // ✅ ADD THIS
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -114,9 +123,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               // ================= HEADER =================
               Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 35,
-                    backgroundColor: Color(0xFFB3E5FC),
+                    backgroundColor: AppColors.incomeCard(context),
                     child: Icon(Icons.person, size: 40),
                   ),
                   const SizedBox(width: 15),
@@ -131,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(255, 179, 0, 1),
+                          color: AppColors.highlight(context),
                         ),
                       ),
                       SizedBox(height: 4),
@@ -143,12 +152,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 30),
 
               // ================= ACCOUNT =================
-              const Text(
+              Text(
                 "Account Settings",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF1A2B5D),
+                  color: AppColors.text(context),
                 ),
               ),
 
@@ -157,14 +166,20 @@ class _ProfileScreenState extends State<ProfileScreen>
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8EEFF),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.person, color: Colors.indigo),
-                      title: const Text("Edit Profile"),
+                      leading: Icon(
+                        Icons.person,
+                        color: AppColors.text(context),
+                      ),
+                      title: Text(
+                        "Edit Profile",
+                        style: TextStyle(color: AppColors.text(context)),
+                      ),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
                         await Navigator.push(
@@ -178,7 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.lock, color: Colors.indigo),
+                      leading: Icon(Icons.lock, color: AppColors.text(context)),
                       title: const Text("Change Password"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
@@ -191,15 +206,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.sms, color: Colors.indigo),
+                      leading: Icon(Icons.sms, color: AppColors.text(context)),
                       title: const Text("Enable SMS Tracking"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: _showSmsDialog,
                     ),
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.manage_accounts,
-                        color: Colors.indigo,
+                        color: AppColors.text(context),
                       ),
                       title: const Text("Manage Accounts"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -226,12 +241,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 25),
 
               // ================= PREFERENCES =================
-              const Text(
+              Text(
                 "Preferences",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF1A2B5D),
+                  color: AppColors.text(context),
                 ),
               ),
 
@@ -240,44 +255,67 @@ class _ProfileScreenState extends State<ProfileScreen>
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8EEFF),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     // 🔔 Manage Notification
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.notifications,
-                        color: Colors.indigo,
+                        color: AppColors.text(context),
                       ),
                       title: const Text("Manage Notification"),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: _handleNotification,
                     ),
-                    const ListTile(
-                      leading: Icon(Icons.dark_mode, color: Colors.indigo),
-                      title: Text("Dark Mode"),
-                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    ),
-                    const ListTile(
-                      leading: Icon(Icons.shield, color: Colors.indigo),
-                      title: Text("Terms Of Use"),
-                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    ListTile(
+                      leading: Icon(
+                        Icons.dark_mode,
+                        color: AppColors.text(context),
+                      ),
+                      title: const Text("Dark Mode"),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _showThemeDialog,
                     ),
                     ListTile(
-  leading: const Icon(Icons.logout, color: Colors.red),
-  title: const Text(
-    "Logout",
-    style: TextStyle(color: Colors.red),
-  ),
-  trailing: const Icon(
-    Icons.arrow_forward_ios,
-    size: 16,
-    color: Colors.red,
-  ),
-  onTap: _handleLogout, // 👈 ADD THIS
-),
+                      leading: Icon(
+                        Icons.shield,
+                        color: AppColors.text(context),
+                      ),
+                      title: Text(
+                        "Terms Of Use",
+                        style: TextStyle(
+                          color: AppColors.text(context),
+                        ), // ✅ optional but better
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16, // ✅ better for theme
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TermsOfUseScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text(
+                        "Logout",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.red,
+                      ),
+                      onTap: _handleLogout, // 👈 ADD THIS
+                    ),
                   ],
                 ),
               ),
@@ -287,86 +325,135 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   void _showSmsDialog() {
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text("Enable SMS Tracking"),
-      content: const Text(
-        "Budgee can automatically detect debit and credit "
-        "transactions from your bank SMS messages.\n\n"
-        "We only read transaction-related messages.\n"
-        "We do NOT store or upload your personal SMS.\n\n"
-        "Do you want to enable SMS tracking?",
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.background(context),
+        titleTextStyle: TextStyle(color: AppColors.text(context), fontSize: 18),
+        contentTextStyle: TextStyle(color: AppColors.subText(context)),
+        title: const Text("Enable SMS Tracking"),
+        content: const Text(
+          "Budgee can automatically detect debit and credit "
+          "transactions from your bank SMS messages.\n\n"
+          "We only read transaction-related messages.\n"
+          "We do NOT store or upload your personal SMS.\n\n"
+          "Do you want to enable SMS tracking?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _enableSmsTracking();
+            },
+            child: const Text("Enable"),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            Navigator.pop(context);
-            await _enableSmsTracking();
+    );
+  }
+
+  Future<void> _enableSmsTracking() async {
+    final status = await Permission.sms.request();
+
+    if (status.isGranted) {
+      SmsService.startListening();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("SMS tracking enabled")));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("SMS permission denied")));
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.background(context),
+        titleTextStyle: TextStyle(color: AppColors.text(context), fontSize: 18),
+        contentTextStyle: TextStyle(color: AppColors.subText(context)),
+        title: const Text("Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+
+      if (!mounted) return;
+
+      // 🔥 IMPORTANT: Clear all screens and go to login
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
+    }
+  }
+
+  void _showThemeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer<ThemeProvider>(
+          builder: (context, themeProvider, _) {
+            return AlertDialog(
+              backgroundColor: AppColors.background(context),
+              title: Text(
+                "Choose Theme",
+                style: TextStyle(color: AppColors.text(context)),
+              ),
+
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Dark Mode",
+                    style: TextStyle(color: AppColors.text(context)),
+                  ),
+
+                  Switch(
+                    value: themeProvider.isDark,
+                    onChanged: (value) {
+                      themeProvider.toggleTheme(value);
+                    },
+                  ),
+                ],
+              ),
+
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ],
+            );
           },
-          child: const Text("Enable"),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> _enableSmsTracking() async {
-  final status = await Permission.sms.request();
-
-  if (status.isGranted) {
-    SmsService.startListening();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("SMS tracking enabled")),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("SMS permission denied")),
+        );
+      },
     );
   }
-}
-
-Future<void> _handleLogout() async {
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Logout"),
-      content: const Text("Are you sure you want to logout?"),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text("Cancel"),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text("Logout"),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm != true) return;
-
-  try {
-    await Supabase.instance.client.auth.signOut();
-
-    if (!mounted) return;
-
-    // 🔥 IMPORTANT: Clear all screens and go to login
-    Navigator.of(context).pushAndRemoveUntil(
-  MaterialPageRoute(builder: (_) => const LoginScreen()),
-  (route) => false,
-);
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Logout failed: $e")),
-    );
-  }
-}
-
 }

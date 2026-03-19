@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_colors.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -34,6 +35,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         .eq('id', user.id)
         .single();
 
+    if (!mounted) return;
+
     setState(() {
       nameCtrl.text = data['name'] ?? '';
       gender = data['gender'];
@@ -47,51 +50,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // ================= SAVE PROFILE =================
-Future<void> _saveProfile() async {
-  final user = _supabase.auth.currentUser;
-  if (user == null) return;
+  Future<void> _saveProfile() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
 
-  try {
-    // 🔐 Update email (Auth)
-    if (emailCtrl.text.trim() != user.email) {
-      await _supabase.auth.updateUser(
-        UserAttributes(email: emailCtrl.text.trim()),
-      );
+    try {
+      // 🔐 Update email (Auth)
+      if (emailCtrl.text.trim() != user.email) {
+        await _supabase.auth.updateUser(
+          UserAttributes(email: emailCtrl.text.trim()),
+        );
+      }
+
+      // 🧠 Build update map safely
+      final updates = {
+        'name': nameCtrl.text.trim(),
+        'gender': gender, // can be null
+      };
+
+      if (dobCtrl.text.isNotEmpty) {
+        updates['dob'] = _parseDate(
+          dobCtrl.text,
+        ).toIso8601String(); // 🔥 important
+      } else {
+        updates['dob'] = null;
+      }
+
+      // 👤 Update database
+      await _supabase.from('users').update(updates).eq('id', user.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Profile updated")));
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error updating profile: $e")));
     }
-
-    // 🧠 Build update map safely
-    final updates = {
-      'name': nameCtrl.text.trim(),
-      'gender': gender, // can be null
-    };
-
-    if (dobCtrl.text.isNotEmpty) {
-      updates['dob'] =
-          _parseDate(dobCtrl.text).toIso8601String(); // 🔥 important
-    } else {
-      updates['dob'] = null;
-    }
-
-    // 👤 Update database
-    await _supabase
-        .from('users')
-        .update(updates)
-        .eq('id', user.id);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Profile updated")),
-    );
-
-    Navigator.pop(context);
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error updating profile: $e")),
-    );
   }
-}
 
   DateTime _parseDate(String value) {
     final parts = value.split('/');
@@ -106,12 +107,11 @@ Future<void> _saveProfile() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppColors.background(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -119,12 +119,12 @@ Future<void> _saveProfile() async {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Text(
+            Text(
               "Edit Profile",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF142752),
+                color: AppColors.text(context),
               ),
             ),
             const SizedBox(height: 6),
@@ -166,7 +166,7 @@ Future<void> _saveProfile() async {
               child: ElevatedButton(
                 onPressed: _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF142752),
+                  backgroundColor: AppColors.primary(context),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -196,11 +196,13 @@ Future<void> _saveProfile() async {
   }) {
     return TextField(
       controller: controller,
+      style: TextStyle(color: AppColors.text(context)), // ✅ ADD
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon),
+        hintStyle: TextStyle(color: AppColors.subText(context)),
+        prefixIcon: Icon(icon, color: AppColors.text(context)),
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
+        fillColor: AppColors.incomeCard(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -213,13 +215,16 @@ Future<void> _saveProfile() async {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EEFF),
+        color: AppColors.incomeCard(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: gender,
-          hint: const Text("Gender"),
+          hint: Text(
+            "Gender",
+            style: TextStyle(color: AppColors.subText(context)),
+          ),
           isExpanded: true,
           items: const [
             DropdownMenuItem(value: "Male", child: Text("Male")),
@@ -236,11 +241,13 @@ Future<void> _saveProfile() async {
     return TextField(
       controller: dobCtrl,
       readOnly: true,
+      style: TextStyle(color: AppColors.text(context)), // ✅ ADD
       decoration: InputDecoration(
         hintText: "DOB",
-        suffixIcon: const Icon(Icons.calendar_today),
+        hintStyle: TextStyle(color: AppColors.subText(context)),
+        suffixIcon: Icon(Icons.calendar_today, color: AppColors.text(context)),
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
+        fillColor: AppColors.incomeCard(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

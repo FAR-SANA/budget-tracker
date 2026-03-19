@@ -10,6 +10,7 @@ import 'add_record_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'voice_input_dialog.dart';
 import '../services/voice_parser.dart';
+import '../theme/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -320,13 +321,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
+                Center(
                   child: Text(
                     "Add Account",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF142752),
+                      color: AppColors.text(context),
                     ),
                   ),
                 ),
@@ -339,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   controller: nameCtrl,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color(0xFFE3EBFD),
+                    fillColor: AppColors.incomeCard(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -357,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   decoration: InputDecoration(
                     prefixText: "₹ ",
                     filled: true,
-                    fillColor: const Color(0xFFE3EBFD),
+                    fillColor: AppColors.incomeCard(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -371,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF142752),
+                      backgroundColor: AppColors.primary(context),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -444,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         .toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -474,14 +475,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   // ---------------- HEADER ----------------
   Widget _header() {
-    return Padding(
+    return Container(
+      color: AppColors.headerBg(context),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             "Hello, Naomi",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text(context),
+            ),
           ),
 
           InkWell(
@@ -499,10 +505,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             },
             child: CircleAvatar(
               radius: 20,
-              backgroundColor: const Color(0xFFE8EEFF), // app soft blue
-              child: const Icon(
+              backgroundColor: AppColors.incomeCard(context), // app soft blue
+              child: Icon(
                 Icons.person,
-                color: Color(0xFF142752), // primary app color
+                color: AppColors.text(context), // primary app color
                 size: 22,
               ),
             ),
@@ -519,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFE8EEFF),
+          color: AppColors.incomeCard(context),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -603,13 +609,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               children: [
                 Text(
                   "Balance\n₹${balance.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 15),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.text(context),
+                  ),
                 ),
                 Text(
                   selectedType == RecordType.income
                       ? "Income\n₹${dayIncome.toStringAsFixed(2)}"
                       : "Expense\n₹${dayExpense.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 15),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.text(context),
+                  ),
                 ),
               ],
             ),
@@ -637,7 +649,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
         Text(
           _formatDate(selectedDate),
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: AppColors.text(context),
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right),
@@ -661,13 +676,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _donutOrEmpty(List<Record> list) {
     if (list.isEmpty) {
       return Column(
-        children: const [
-          Icon(Icons.pie_chart_outline, size: 100, color: Colors.grey),
+        children: [
+          Icon(
+            Icons.pie_chart_outline,
+            size: 100,
+            color: AppColors.subText(context),
+          ),
           SizedBox(height: 10),
           Text(
             "No records yet. Add one to\nview your daily analysis.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: AppColors.subText(context)),
           ),
         ],
       );
@@ -727,12 +746,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               title,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: active ? const Color(0xFF142752) : Colors.blue.shade200,
+                color: active
+                    ? AppColors.activeTab(context)
+                    : AppColors.inactiveTab(context),
               ),
             ),
             Divider(
               thickness: 3,
-              color: active ? const Color(0xFF142752) : Colors.blue.shade200,
+              color: active
+                  ? AppColors.activeTab(context)
+                  : AppColors.inactiveTab(context),
             ),
           ],
         ),
@@ -792,10 +815,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50]!.withOpacity(0.65),
+                      color:
+                          (r.type == RecordType.income
+                                  ? AppColors.incomeCard(context)
+                                  : AppColors.expenseCard(context))
+                              .withOpacity(0.65),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: Colors.blue[100]!.withOpacity(0.35),
+                        color: AppColors.subText(context).withOpacity(0.2),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -811,8 +838,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Expanded(
                           child: Row(
                             children: [
-                              const CircleAvatar(
-                                backgroundColor: Color(0xFF142752),
+                              CircleAvatar(
+                                backgroundColor: AppColors.primary(context),
                                 child: Icon(Icons.work, color: Colors.white),
                               ),
                               const SizedBox(width: 12),
@@ -821,10 +848,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   r.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF142752),
+                                    color: AppColors.text(context),
                                   ),
                                 ),
                               ),
@@ -841,8 +868,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: r.type == RecordType.income
-                                  ? Colors.green
-                                  : Colors.red,
+                                  ? AppColors.highlight(
+                                      context,
+                                    ) // or keep green if you want
+                                  : AppColors.darkBlueText(context),
                             ),
                           ),
                         ),
@@ -864,7 +893,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       height: 64,
       width: 64,
       decoration: BoxDecoration(
-        color: const Color(0xFF142752),
+        color: AppColors.primary(context),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
@@ -907,13 +936,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 child: Container(
                   width: 220,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background(context), // ✅ THEME FIX
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
+                        color: Colors.black.withOpacity(0.15),
                         blurRadius: 10,
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),

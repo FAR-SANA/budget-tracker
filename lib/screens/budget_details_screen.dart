@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/budget.dart';
 import 'edit_budget_screen.dart';
+import '../theme/app_colors.dart';
 
 class BudgetDetailsScreen extends StatefulWidget {
   final Budget budget;
@@ -48,20 +49,20 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Budget Details",
           style: TextStyle(
-            color: Color(0xFF142752),
+            color: AppColors.text(context),
             fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true, // ✅ CENTER TITLE
         elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Color(0xFF142752)),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
       ),
 
       body: SafeArea(
@@ -147,8 +148,8 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
   Widget _label(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF142752),
+      style: TextStyle(
+        color: AppColors.text(context),
         fontWeight: FontWeight.w500,
       ),
     );
@@ -158,10 +159,11 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     return TextField(
       controller: ctrl,
       readOnly: true,
+      style: TextStyle(color: AppColors.text(context)),
       decoration: InputDecoration(
         prefixText: prefix,
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
+        fillColor: AppColors.incomeCard(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -172,9 +174,11 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
 
   Widget _typeToggle() {
     return Container(
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
+        color: AppColors.background(context),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.subText(context).withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -199,7 +203,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
           child: Text(
             text,
             style: TextStyle(
-              color: active ? Colors.white : Colors.blue.shade200,
+              color: active ? Colors.white : AppColors.text(context),
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/budget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_colors.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   final BudgetType type;
@@ -37,20 +38,20 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Add Budget",
           style: TextStyle(
-            color: Color(0xFF142752),
+            color: AppColors.text(context),
             fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Color(0xFF142752)),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
       ),
 
       body: SafeArea(
@@ -105,7 +106,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _typeToggle() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
+        color: AppColors.background(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -126,14 +127,14 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF142752) : Colors.transparent,
+            color: active ? AppColors.primary(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
             child: Text(
               text,
               style: TextStyle(
-                color: active ? Colors.white : Colors.blue.shade200,
+                color: active ? Colors.white : AppColors.subText(context),
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
@@ -148,8 +149,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _label(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF142752),
+      style: TextStyle(
+        color: AppColors.text(context),
         fontWeight: FontWeight.w500,
       ),
     );
@@ -158,6 +159,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _textField(TextEditingController ctrl, bool error) {
     return TextField(
       controller: ctrl,
+      style: TextStyle(color: AppColors.text(context)),
       decoration: _inputDecoration(error),
       onChanged: (_) {
         if (error) setState(() => titleError = false);
@@ -168,6 +170,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _amountField() {
     return TextField(
       controller: amountCtrl,
+      style: TextStyle(color: AppColors.text(context)),
       keyboardType: TextInputType.number,
       decoration: _inputDecoration(amountError, prefix: "₹ "),
       onChanged: (_) {
@@ -179,6 +182,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _currentAmountField() {
     return TextField(
       controller: currentAmountCtrl,
+      style: TextStyle(color: AppColors.text(context)),
       keyboardType: TextInputType.number,
       decoration: _inputDecoration(false, prefix: "₹ "),
     );
@@ -187,12 +191,17 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _dateField(TextEditingController ctrl, VoidCallback onTap) {
     return TextField(
       controller: ctrl,
+      style: TextStyle(color: AppColors.text(context)),
       readOnly: true,
       onTap: onTap,
       decoration: _inputDecoration(
         startDateError && ctrl == startDateCtrl,
         suffix: IconButton(
-          icon: const Icon(Icons.calendar_today, size: 18),
+          icon: Icon(
+            Icons.calendar_today,
+            size: 18,
+            color: AppColors.text(context),
+          ),
           onPressed: onTap,
         ),
       ),
@@ -208,7 +217,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       prefixText: prefix,
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFE8EEFF),
+      fillColor: AppColors.incomeCard(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -259,6 +268,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         TextButton.icon(
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary(context),
+          ),
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.chevron_left),
           label: const Text("CANCEL"),
@@ -266,7 +278,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         ElevatedButton(
           onPressed: _save,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF142752),
+            backgroundColor: AppColors.primary(context),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -318,9 +330,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         'current_amount': current,
         'budget_type': selectedType.name,
         'start_date': startDate!.toIso8601String().split('T').first,
-        'end_date': endDate == null
-            ? null
-            : endDate!.toIso8601String().split('T').first,
+        'end_date': endDate?.toIso8601String().split('T').first,
       });
 
       if (!mounted) return;

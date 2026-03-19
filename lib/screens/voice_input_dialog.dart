@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import '../theme/app_colors.dart';
 
 class VoiceInputDialog extends StatefulWidget {
   const VoiceInputDialog({super.key});
@@ -45,28 +46,37 @@ class _VoiceInputDialogState extends State<VoiceInputDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: AppColors.background(context), // ✅ ADD
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               "Speak your record",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.text(context),
+              ),
             ),
 
             const SizedBox(height: 10),
 
-            const Text(
+            Text(
               "Example:\nRs 200 spent for Fruits on 26th February 2026 in the food category from account Savings",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 13),
+              style: TextStyle(color: AppColors.subText(context), fontSize: 13),
             ),
 
             const SizedBox(height: 20),
 
-            Text(_text, textAlign: TextAlign.center),
+            Text(
+              _text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.text(context)),
+            ),
 
             const SizedBox(height: 20),
 
@@ -74,7 +84,7 @@ class _VoiceInputDialogState extends State<VoiceInputDialog> {
               iconSize: 60,
               icon: Icon(
                 _isListening ? Icons.stop : Icons.mic,
-                color: const Color(0xFF142752),
+                color: AppColors.text(context),
               ),
               onPressed: _isListening ? _stopListening : _startListening,
             ),

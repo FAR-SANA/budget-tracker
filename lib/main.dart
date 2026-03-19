@@ -4,8 +4,9 @@ import 'services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'screens/welcome_screen.dart'; // ✅ ADDED
 import 'screens/setnewpass.dart';
-
-
+import 'package:provider/provider.dart';
+import 'theme/theme_provider.dart';
+import 'theme/app_theme.dart';
 import 'package:telephony/telephony.dart';
 
 @pragma('vm:entry-point')
@@ -118,7 +119,12 @@ void main() async {
     listenInBackground: true,
   );
 
-  runApp(const BudgeeApp());
+  runApp(
+  ChangeNotifierProvider(
+    create: (_) => ThemeProvider(),
+    child: const BudgeeApp(),
+  ),
+);
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
     final event = data.event;
 
@@ -136,13 +142,21 @@ class BudgeeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(
+  builder: (context, themeProvider, child) {
     return MaterialApp(
       navigatorKey: navKey,
       debugShowCheckedModeBanner: false,
       title: 'Budgee',
 
-      // ✅ CHANGED: Start with Splash Screen
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode:
+          themeProvider.isDark ? ThemeMode.dark : ThemeMode.light,
+
       home: const WelcomeScreen(),
     );
+  },
+);
   }
 }

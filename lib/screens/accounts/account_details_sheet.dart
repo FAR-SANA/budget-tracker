@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'edit_account_sheet.dart';
+import '../../theme/app_colors.dart';
 
 class AccountDetailsSheet extends StatefulWidget {
   final Map account;
@@ -19,27 +20,30 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
     accountData = Map.from(widget.account);
   }
 
- void openEdit() async {
-  final result = await showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: EditAccountSheet(account: accountData),
+  void openEdit() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            color: AppColors.background(context), // ✅ ADD THIS
+            child: EditAccountSheet(account: accountData),
+          ),
+        ),
       ),
-    ),
-  );
+    );
 
-  if (result != null) {
-    setState(() {
-      accountData = result; // 🔥 update local UI
-    });
+    if (result != null) {
+      setState(() {
+        accountData = result; // 🔥 update local UI
+      });
 
-    Navigator.pop(context, true); // 🔥 send change upward
+      Navigator.pop(context, true); // 🔥 send change upward
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +51,9 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
         padding: const EdgeInsets.all(5),
-        decoration: const BoxDecoration(
-          color: Color.fromARGB(255, 255, 255, 255),
+        decoration: BoxDecoration(
+          color: AppColors.background(context),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -56,26 +61,26 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
                 onPressed: () => Navigator.pop(context),
               ),
 
-              const Center(
+              Center(
                 child: Text(
                   "Account Details",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A2B5D),
+                    color: AppColors.text(context),
                   ),
                 ),
               ),
 
               const SizedBox(height: 35),
 
-              const Text(
+              Text(
                 "Account Name:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
@@ -87,20 +92,23 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   accountData['name'],
-                  style: const TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.text(context),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 10),
 
-              const Text(
+              Text(
                 "Amount:",
-                style: TextStyle(fontSize: 15, color: Color(0xFF1A2B5D)),
+                style: TextStyle(fontSize: 15, color: AppColors.text(context)),
               ),
 
               const SizedBox(height: 4),
@@ -112,12 +120,15 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCE3F8),
+                  color: AppColors.incomeCard(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   "₹ ${accountData['balance']}",
-                  style: const TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.text(context),
+                  ),
                 ),
               ),
 
@@ -129,7 +140,7 @@ class _AccountDetailsSheetState extends State<AccountDetailsSheet> {
                 child: ElevatedButton(
                   onPressed: openEdit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A2B5D),
+                    backgroundColor: AppColors.primary(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'forgot_password_screen.dart'; // ✅ ADD THIS
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../theme/app_colors.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -21,25 +21,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool hasNumber = false;
   bool hasSpecial = false;
 
-bool get isValid =>
-    currentCtrl.text.isNotEmpty &&
-    hasMinLength &&
-    hasUpper &&
-    hasLower &&
-    hasNumber &&
-    hasSpecial &&
-    newCtrl.text == confirmCtrl.text &&
-    newCtrl.text.isNotEmpty;
-
+  bool get isValid =>
+      currentCtrl.text.isNotEmpty &&
+      hasMinLength &&
+      hasUpper &&
+      hasLower &&
+      hasNumber &&
+      hasSpecial &&
+      newCtrl.text == confirmCtrl.text &&
+      newCtrl.text.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
     newCtrl.addListener(_validatePassword);
-      // 🔥 ADD THIS
-  confirmCtrl.addListener(() {
-    setState(() {});
-  });
+    // 🔥 ADD THIS
+    confirmCtrl.addListener(() {
+      setState(() {});
+    });
   }
 
   void _validatePassword() {
@@ -57,13 +56,12 @@ bool get isValid =>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppColors.background(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: AppColors.text(context)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -75,13 +73,13 @@ bool get isValid =>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// TITLE
-            const Center(
+            Center(
               child: Text(
                 "Change Password",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF142752),
+                  color: AppColors.text(context),
                 ),
               ),
             ),
@@ -109,9 +107,9 @@ bool get isValid =>
                   );
                 },
 
-                child: const Text(
+                child: Text(
                   "Forgot password?",
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppColors.subText(context)),
                 ),
               ),
             ),
@@ -130,7 +128,7 @@ bool get isValid =>
 
             const SizedBox(height: 25),
 
-            const Divider(),
+            Divider(color: AppColors.subText(context).withOpacity(0.3)),
 
             const SizedBox(height: 10),
 
@@ -153,9 +151,9 @@ bool get isValid =>
                 onPressed: isValid ? _save : null,
 
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF142752),
-                  disabledBackgroundColor: const Color(
-                    0xFF142752,
+                  backgroundColor: AppColors.primary(context),
+                  disabledBackgroundColor: AppColors.primary(
+                    context,
                   ).withOpacity(0.4),
 
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -187,12 +185,13 @@ bool get isValid =>
     return TextField(
       controller: controller,
       obscureText: obscure,
+      style: TextStyle(color: AppColors.text(context)), // ✅ ADD
 
       decoration: InputDecoration(
         hintText: hint,
-
+        hintStyle: TextStyle(color: AppColors.subText(context)),
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
+        fillColor: AppColors.incomeCard(context),
 
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -210,7 +209,9 @@ bool get isValid =>
         children: [
           Icon(
             active ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: active ? const Color(0xFF142752) : Colors.grey,
+            color: active
+                ? AppColors.subText(context)
+                : AppColors.primary(context),
             size: 20,
           ),
 
@@ -219,60 +220,61 @@ bool get isValid =>
           Text(
             text,
             style: TextStyle(
-              color: active ? const Color(0xFF142752) : Colors.grey,
+              color: active
+                  ? AppColors.subText(context)
+                  : AppColors.primary(context),
             ),
           ),
         ],
       ),
     );
   }
-Future<void> _save() async {
-  final supabase = Supabase.instance.client;
 
-  if (!mounted) return;
+  Future<void> _save() async {
+    final supabase = Supabase.instance.client;
 
-  try {
-    final user = supabase.auth.currentUser;
+    if (!mounted) return;
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User not logged in")),
+    try {
+      final user = supabase.auth.currentUser;
+
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("User not logged in")));
+        return;
+      }
+
+      // 🔐 Step 1: Reauthenticate
+      await supabase.auth.signInWithPassword(
+        email: user.email!,
+        password: currentCtrl.text.trim(),
       );
-      return;
+
+      // 🔐 Step 2: Update password
+      await supabase.auth.updateUser(
+        UserAttributes(password: newCtrl.text.trim()),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password updated successfully")),
+      );
+
+      Navigator.pop(context);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
     }
-
-    // 🔐 Step 1: Reauthenticate
-    await supabase.auth.signInWithPassword(
-      email: user.email!,
-      password: currentCtrl.text.trim(),
-    );
-
-    // 🔐 Step 2: Update password
-    await supabase.auth.updateUser(
-      UserAttributes(password: newCtrl.text.trim()),
-    );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Password updated successfully")),
-    );
-
-    Navigator.pop(context);
-
-  } on AuthException catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.message)),
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Something went wrong")),
-    );
   }
-}
-
 }

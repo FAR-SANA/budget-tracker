@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_colors.dart';
 import '../models/budget.dart';
 
 class EditBudgetScreen extends StatefulWidget {
@@ -86,9 +87,7 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
             'current_amount': current,
             'budget_type': selectedType.name,
             'start_date': startDate!.toIso8601String().split('T').first,
-            'end_date': endDate == null
-                ? null
-                : endDate!.toIso8601String().split('T').first,
+            'end_date': endDate?.toIso8601String().split('T').first,
           })
           .eq('budget_id', widget.budget.id);
 
@@ -107,20 +106,20 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background(context),
 
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Edit Budget",
           style: TextStyle(
-            color: Color(0xFF142752),
+            color: AppColors.text(context),
             fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Color(0xFF142752)),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
       ),
 
       body: SafeArea(
@@ -199,8 +198,8 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
   Widget _label(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFF142752),
+      style: TextStyle(
+        color: AppColors.text(context),
         fontWeight: FontWeight.w500,
       ),
     );
@@ -209,11 +208,12 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
   Widget _editableField(TextEditingController ctrl, {String? prefix}) {
     return TextField(
       controller: ctrl,
+      style: TextStyle(color: AppColors.text(context)),
       keyboardType: prefix != null ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
         prefixText: prefix,
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
+        fillColor: AppColors.incomeCard(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -229,8 +229,8 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
       onTap: () => _pickDate(isStart),
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFE8EEFF),
-        suffixIcon: const Icon(Icons.calendar_today),
+        fillColor: AppColors.incomeCard(context),
+        suffixIcon: Icon(Icons.calendar_today, color: AppColors.text(context)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -262,9 +262,11 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
 
   Widget _typeToggle() {
     return Container(
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE3EBFD),
+        color: AppColors.background(context),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.subText(context).withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -282,16 +284,16 @@ class _EditBudgetScreenState extends State<EditBudgetScreen> {
       child: GestureDetector(
         onTap: () => setState(() => selectedType = type),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF142752) : Colors.transparent,
+            color: active ? AppColors.primary(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
             child: Text(
               text,
               style: TextStyle(
-                color: active ? Colors.white : Colors.blue.shade200,
+                color: active ? Colors.white : AppColors.text(context),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'add_account_sheet.dart';
 import 'account_details_sheet.dart';
+import '../../theme/app_colors.dart';
 
 class AllAccountsScreen extends StatefulWidget {
   const AllAccountsScreen({super.key});
@@ -36,29 +37,28 @@ class _AllAccountsScreenState extends State<AllAccountsScreen> {
     });
   }
 
-
-void openAddAccount() async {
-  final changed = await showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          color: Colors.white,
-          child: const AddAccountSheet(),
+  void openAddAccount() async {
+    final changed = await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            color: AppColors.background(context),
+            child: const AddAccountSheet(),
+          ),
         ),
       ),
-    ),
-  );
+    );
 
-  if (changed == true) {
-    fetchAccounts();
-    Navigator.pop(context, true); // tell previous screen accounts changed
+    if (changed == true) {
+      fetchAccounts();
+      Navigator.pop(context, true); // tell previous screen accounts changed
+    }
   }
-}
 
   void openDetails(Map account) async {
     final changed = await showDialog(
@@ -70,7 +70,7 @@ void openAddAccount() async {
           borderRadius: BorderRadius.circular(24),
           child: Container(
             padding: const EdgeInsets.all(20),
-            color: Colors.white,
+            color: AppColors.background(context),
             child: AccountDetailsSheet(account: account),
           ),
         ),
@@ -86,128 +86,146 @@ void openAddAccount() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("All Accounts")),
+      appBar: AppBar(
+        title: Text(
+          "All Accounts",
+          style: TextStyle(color: AppColors.text(context)),
+        ),
+        backgroundColor: AppColors.background(context),
+        iconTheme: IconThemeData(color: AppColors.text(context)),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16),
               child: ListView(
                 children: [
-                ...accounts.map((acc) {
-  return Center(
-    child: Dismissible(
-      key: Key(acc['account_id']),
-      direction: DismissDirection.horizontal,
+                  ...accounts.map((acc) {
+                    return Center(
+                      child: Dismissible(
+                        key: Key(acc['account_id']),
+                        direction: DismissDirection.horizontal,
 
-      confirmDismiss: (_) async {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text("Delete Account"),
-            content: const Text("Are you sure you want to delete this account?"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("Yes"),
-              ),
-            ],
-          ),
-        );
+                        confirmDismiss: (_) async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Delete Account"),
+                              content: const Text(
+                                "Are you sure you want to delete this account?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text("Yes"),
+                                ),
+                              ],
+                            ),
+                          );
 
-        if (confirm != true) return false;
+                          if (confirm != true) return false;
 
-        final client = Supabase.instance.client;
+                          final client = Supabase.instance.client;
 
-        await client
-            .from('records')
-            .delete()
-            .eq('account_id', acc['account_id']);
+                          await client
+                              .from('records')
+                              .delete()
+                              .eq('account_id', acc['account_id']);
 
-        await client
-            .from('accounts')
-            .delete()
-            .eq('account_id', acc['account_id']);
+                          await client
+                              .from('accounts')
+                              .delete()
+                              .eq('account_id', acc['account_id']);
 
-        setState(() {
-          accounts.remove(acc);
-        });
-       Navigator.pop(context, true);
-        return true;
-      },
+                          setState(() {
+                            accounts.remove(acc);
+                          });
+                          Navigator.pop(context, true);
+                          return true;
+                        },
 
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
+                        background: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          color: Colors.red,
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
 
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
+                        secondaryBackground: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          color: Colors.red,
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
 
-      child: GestureDetector(
-        onTap: () => openDetails(acc),
-        child: Container(
-          width: 330,
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: const Color.fromARGB(255, 202, 200, 255).withOpacity(0.5),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.4),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                blurRadius: 20,
-                offset: Offset(0, 10),
-                color: Color.fromARGB(31, 255, 255, 255),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Account name",
-                style: TextStyle(color: Colors.indigo.shade900),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                acc['name'],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Balance",
-                style: TextStyle(color: Colors.indigo.shade900),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "₹${acc['balance']}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}),
+                        child: GestureDetector(
+                          onTap: () => openDetails(acc),
+                          child: Container(
+                            width: 330,
+                            margin: const EdgeInsets.only(bottom: 20),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.incomeCard(context), // ✅ dynamic
+                              border: Border.all(
+                                color: AppColors.subText(
+                                  context,
+                                ).withOpacity(0.2),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withOpacity(0.08),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Account name",
+                                  style: TextStyle(
+                                    color: AppColors.subText(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  acc['name'],
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.text(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Balance",
+                                  style: TextStyle(
+                                    color: AppColors.subText(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "₹${acc['balance']}",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.text(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 20),
 
                   SizedBox(
