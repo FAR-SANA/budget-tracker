@@ -16,7 +16,23 @@ class BudgetScreen extends StatefulWidget {
 
 class _BudgetScreenState extends State<BudgetScreen> {
   BudgetType selectedTab = BudgetType.saving;
+  String userName = "User";
+  Future<void> loadUserName() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
 
+  final data = await Supabase.instance.client
+      .from('users')
+      .select('name')
+      .eq('id', user.id)
+      .single();
+
+  if (!mounted) return;
+
+  setState(() {
+    userName = data['name'] ?? "User";
+  });
+}
   // ✅ FIX: persist budgets across screen rebuilds
   List<Budget> budgets = [];
   bool isLoading = true;
@@ -25,6 +41,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   void initState() {
     super.initState();
     fetchBudgets();
+     loadUserName();
   }
 
   Future<void> fetchBudgets() async {
@@ -132,7 +149,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Hello, Naomi",
+            "Hello, $userName",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,

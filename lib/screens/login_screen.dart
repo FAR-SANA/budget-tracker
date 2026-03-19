@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // 🔥 If profile does NOT exist → create it
         if (existing == null) {
-          await supabase.from('users').insert({
+          await supabase.from('users').upsert({
             'id': user.id,
             'name': user.userMetadata?['name'] ?? '',
             'email': user.email,

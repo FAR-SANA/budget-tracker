@@ -21,6 +21,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final supabase = Supabase.instance.client;
+  String userName = "User";
+  Future<void> loadUserName() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final data = await Supabase.instance.client
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+
+    if (!mounted) return;
+
+    setState(() {
+      userName = data['name'] ?? "User";
+    });
+  }
 
   late RealtimeChannel _recordsChannel;
 
@@ -62,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    loadUserName();
 
     WidgetsBinding.instance.addObserver(this);
 
@@ -482,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Hello, Naomi",
+            "Hello, $userName",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,

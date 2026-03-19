@@ -21,42 +21,66 @@ class _SignupScreenState extends State<SignupScreen> {
   final supabase = Supabase.instance.client;
 
   // ✅ SIGN UP FUNCTION
-Future<void> signUpUser() async {
-  try {
-    final response = await supabase.auth.signUp(
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-      data: {
-        'name': nameController.text.trim(),
-      },
-    );
+  Future<void> signUpUser() async {
+    // ✅ VALIDATION
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("All fields are required")));
+      return;
+    }
 
-    if (response.user != null) {
-      await supabase.from('users').insert({
-        'id': response.user!.id,
-        'name': nameController.text.trim(),
-      });
+    try {
+      final response = await supabase.auth.signUp(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+        data: {'name': nameController.text.trim()},
+      );
 
+      if (response.user != null) {
+        // 🔥 EMAIL CONFIRMATION CHECK
+        if (response.session == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Check your email to confirm your account"),
+            ),
+          );
+          return;
+        }
+
+        // 🔥 SAFE INSERT
+        await supabase.from('users').upsert({
+          'id': response.user!.id,
+          'name': nameController.text.trim(),
+        });
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Account created successfully!")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    } on AuthException catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created successfully!")),
-      );
-
-      Navigator.pushReplacement(
+      ScaffoldMessenger.of(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (e) {
+      print("SIGNUP ERROR: $e");
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
-  } on AuthException catch (error) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error.message)),
-    );
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
