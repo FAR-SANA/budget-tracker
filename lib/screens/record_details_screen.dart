@@ -264,8 +264,9 @@ class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
                       ),
                     );
 
-                    if (!context.mounted)
+                    if (!context.mounted) {
                       return; // ✅ prevents async context issue
+                    }
 
                     if (updated != null) {
                       Navigator.pop(
