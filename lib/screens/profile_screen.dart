@@ -398,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (confirm != true) return;
 
     try {
-      await Supabase.instance.client.auth.signOut();
+      await Supabase.instance.client.auth.signOut(scope: SignOutScope.global,);
 
       if (!mounted) return;
 

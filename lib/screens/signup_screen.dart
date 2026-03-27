@@ -36,6 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
       final response = await supabase.auth.signUp(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
+         emailRedirectTo: 'com.example.budgee://login',
         data: {'name': nameController.text.trim()},
       );
 

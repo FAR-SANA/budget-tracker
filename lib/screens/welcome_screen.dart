@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
+import 'setnewpass.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -19,21 +20,41 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Show splash for 2 seconds
     await Future.delayed(const Duration(seconds: 2));
 
-    final session = Supabase.instance.client.auth.currentSession;
+    final supabase = Supabase.instance.client;
+    final session = supabase.auth.currentSession;
 
     if (!mounted) return;
 
+    // 🔥 Detect if app opened from email confirmation
+    final uri = Uri.base;
+
+    if (uri.scheme == 'com.example.budgee') {
+      if (uri.host == 'login') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+        return;
+      }
+
+      if (uri.host == 'reset-password') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SetNewPasswordScreen()),
+        );
+        return;
+      }
+    }
+
+    // 🔹 Normal app flow
     if (session != null) {
-      // ✅ User already logged in → Home
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
-      // ✅ User not logged in → Login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -51,19 +72,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           children: [
             const Text(
               "Welcome to",
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.orange,
-              ),
+              style: TextStyle(fontSize: 20, color: Colors.orange),
             ),
 
             const SizedBox(height: 20),
 
-            Image.asset(
-              'assets/images/budgee_logo.png',
-              height: 100,
-            ),
-
+            Image.asset('assets/images/budgee_logo.png', height: 100),
           ],
         ),
       ),

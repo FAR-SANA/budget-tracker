@@ -428,11 +428,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             .select()
                             .single();
 
-                        setState(() {
-                          primaryAccount = Account.fromJson(inserted);
-                        });
+                       setState(() {
+  final acc = Account.fromJson(inserted);
 
-                        Navigator.pop(context);
+  primaryAccount = acc;
+  allAccounts = [acc]; // 🔥 THIS IS THE FIX
+});
+
+                      Navigator.of(context, rootNavigator: true).pop();
                       } catch (e) {
                         print("ACCOUNT SAVE ERROR: $e");
 
@@ -564,9 +567,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       isExpanded: true,
-                      value: showAllAccounts
-                          ? 'ALL'
-                          : primaryAccount?.accountId,
+                     value: showAllAccounts
+    ? 'ALL'
+    : allAccounts.any((a) => a.accountId == primaryAccount?.accountId)
+        ? primaryAccount?.accountId
+        : null,
                       items: [
                         const DropdownMenuItem(
                           value: 'ALL',

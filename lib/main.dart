@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'package:telephony/telephony.dart';
+import 'screens/login_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> backgroundSmsHandler(SmsMessage message) async {
@@ -120,21 +121,33 @@ void main() async {
   );
 
   runApp(
-  ChangeNotifierProvider(
-    create: (_) => ThemeProvider(),
-    child: const BudgeeApp(),
-  ),
-);
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const BudgeeApp(),
+    ),
+  );
   Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    final event = data.event;
+  final event = data.event;
 
-    if (event == AuthChangeEvent.passwordRecovery) {
-      navKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const SetNewPasswordScreen()),
-        (route) => false,
-      );
-    }
-  });
+  // 🔐 PASSWORD RESET FLOW
+  if (event == AuthChangeEvent.passwordRecovery) {
+    navKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const SetNewPasswordScreen()),
+      (route) => false,
+    );
+  }
+
+  // ✅ EMAIL CONFIRMATION FLOW (ONLY when app opened from email)
+  if (event == AuthChangeEvent.signedIn &&
+      data.session?.user.emailConfirmedAt != null &&
+      data.session?.user.lastSignInAt == data.session?.user.emailConfirmedAt) {
+
+    navKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+});
 }
 
 class BudgeeApp extends StatelessWidget {
@@ -143,20 +156,19 @@ class BudgeeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
-  builder: (context, themeProvider, child) {
-    return MaterialApp(
-      navigatorKey: navKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Budgee',
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          navigatorKey: navKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Budgee',
 
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode:
-          themeProvider.isDark ? ThemeMode.dark : ThemeMode.light,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.isDark ? ThemeMode.dark : ThemeMode.light,
 
-      home: const WelcomeScreen(),
+          home: const WelcomeScreen(),
+        );
+      },
     );
-  },
-);
   }
 }
