@@ -595,6 +595,29 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     );
   }
 
+String _getNextDate(DateTime date, String frequency) {
+  DateTime next;
+
+  switch (frequency) {
+    case 'daily':
+      next = date.add(const Duration(days: 1));
+      break;
+    case 'weekly':
+      next = date.add(const Duration(days: 7));
+      break;
+    case 'monthly':
+      next = DateTime(date.year, date.month + 1, date.day);
+      break;
+    case 'yearly':
+      next = DateTime(date.year + 1, date.month, date.day);
+      break;
+    default:
+      next = date;
+  }
+
+  return next.toIso8601String().split('T').first;
+}
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -675,10 +698,7 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
                 'frequency': freq,
                 'interval': 1,
                 'start_date': selectedDate.toIso8601String().split('T').first,
-                'next_run_date': selectedDate
-                    .toIso8601String()
-                    .split('T')
-                    .first,
+               'next_run_date': _getNextDate(selectedDate, freq),
                 'is_active': true,
               })
               .select()
@@ -689,7 +709,18 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
           // 🔵 update existing rule
           await supabase
               .from('recurring_rules')
-              .update({'frequency': freq})
+  .update({
+  'frequency': freq,
+  'next_run_date': _getNextDate(selectedDate, freq),
+
+  // 🔥 ADD THESE
+  'title': titleCtrl.text.trim(),
+  'amount': newAmount,
+  'account_id': newAccountId,
+  'budget_id': selectedBudgetId,
+  'record_type': selectedType.name,
+  'category_name': selectedCategory,
+})
               .eq('rule_id', recurringRuleId);
         }
       }

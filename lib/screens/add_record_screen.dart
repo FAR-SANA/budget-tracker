@@ -696,6 +696,33 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     }
   }
 
+  String _getNextDate(DateTime date, String frequency) {
+    DateTime next;
+
+    switch (frequency) {
+      case 'daily':
+        next = date.add(const Duration(days: 1));
+        break;
+
+      case 'weekly':
+        next = date.add(const Duration(days: 7));
+        break;
+
+      case 'monthly':
+        next = DateTime(date.year, date.month + 1, date.day);
+        break;
+
+      case 'yearly':
+        next = DateTime(date.year + 1, date.month, date.day);
+        break;
+
+      default:
+        next = date;
+    }
+
+    return next.toIso8601String().split('T').first;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (selectedAccountId == null) {
@@ -765,7 +792,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           'recurring_rule_id': null,
         });
 
-        // Update balance
+        // 🔥 CORRECT BALANCE UPDATE (PUT HERE)
+
         if (selectedType == RecordType.income) {
           await supabase.rpc(
             'increment_balance',
@@ -822,7 +850,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               'byweekday': byweekday,
               'bymonthday': bymonthday,
               'start_date': dateStr,
-              'next_run_date': dateStr,
+              'next_run_date': _getNextDate(selectedDate!, frequency),
               'is_active': true,
             })
             .select('rule_id')
@@ -842,14 +870,21 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           'budget_id': selectedBudgetId,
           'recurring_rule_id': ruleId,
         });
+        // 🔥 CORRECT BALANCE UPDATE (PUT HERE)
 
-        // Update balance
         if (selectedType == RecordType.income) {
           await supabase.rpc(
             'increment_balance',
             params: {'acc_id': selectedAccountId, 'amount_val': amount},
           );
+        } else {
+          await supabase.rpc(
+            'decrement_balance',
+            params: {'acc_id': selectedAccountId, 'amount_val': amount},
+          );
         }
+
+        // 🔥 Budget update (separate)
         if (selectedBudgetId != null) {
           final budgetData = await supabase
               .from('budgets')
@@ -859,26 +894,14 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
           double current = (budgetData['current_amount'] ?? 0).toDouble();
 
-          double updatedAmount;
-
-          if (selectedType == RecordType.income) {
-            updatedAmount = current + amount;
-          } else {
-            updatedAmount = current + amount; // expense also adds
-          }
+          double updatedAmount = current + amount;
 
           await supabase
               .from('budgets')
               .update({'current_amount': updatedAmount})
               .eq('budget_id', selectedBudgetId!);
-        } else {
-          await supabase.rpc(
-            'decrement_balance',
-            params: {'acc_id': selectedAccountId, 'amount_val': amount},
-          );
         }
       }
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Record saved successfully")),
       );

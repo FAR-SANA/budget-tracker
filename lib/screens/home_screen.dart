@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'voice_input_dialog.dart';
 import '../services/voice_parser.dart';
 import '../theme/app_colors.dart';
+import '../services/recurring_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  bool _isProcessingRecurring = false;
   final supabase = Supabase.instance.client;
   String userName = "User";
   Future<void> loadUserName() async {
@@ -86,33 +88,58 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _initialize();
     _listenForRealtimeUpdates();
   }
+ Future<void> _runRecurringSafely() async {
+  if (_isProcessingRecurring) return;
 
+  _isProcessingRecurring = true;
+
+  try {
+    await RecurringService.processRecurring();
+    await loadAccount();
+await loadRecords();
+  } catch (e) {
+    print("Recurring error: $e");
+  }
+
+  _isProcessingRecurring = false;
+}
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
+
+  await _runRecurringSafely();
+
       await loadAccount();
       await loadRecords();
     }
   }
+Future<void> _initialize() async {
+  await _runRecurringSafely();
 
-  Future<void> _initialize() async {
-    await loadAccount();
 
-    if (primaryAccount != null) {
-      await loadRecords();
-    }
+  await loadAccount();
+
+  if (primaryAccount != null) {
+    await loadRecords();
   }
-
+}
   void _listenForRealtimeUpdates() {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
-    _recordsChannel = supabase
-        .channel('records_changes')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'records',
+ _recordsChannel = supabase
+    .channel('records_changes')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'records',
+
+      // 🔥 ADD THIS EXACTLY HERE
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'user_id',
+        value: user.id,
+      ),
           callback: (payload) async {
             print("REALTIME EVENT TRIGGERED");
             print("Payload: ${payload.newRecord}");
@@ -292,21 +319,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             .eq('budget_id', r.budgetId!);
       }
 
-      // 🔥 Update budget BEFORE deleting record
-      if (budgetId != null) {
-        final budgetData = await supabase
-            .from('budgets')
-            .select('current_amount')
-            .eq('budget_id', budgetId)
-            .single();
-
-        double currentBudget = (budgetData['current_amount'] ?? 0).toDouble();
-
-        await supabase
-            .from('budgets')
-            .update({'current_amount': currentBudget - r.amount})
-            .eq('budget_id', budgetId);
-      }
 
       // 🔥 4️⃣ Delete record
       await supabase.from('records').delete().eq('record_id', r.id);
