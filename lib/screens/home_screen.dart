@@ -95,8 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   try {
     await RecurringService.processRecurring();
-    await loadAccount();
-await loadRecords();
   } catch (e) {
     print("Recurring error: $e");
   }
@@ -127,19 +125,17 @@ Future<void> _initialize() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
- _recordsChannel = supabase
-    .channel('records_changes')
-    .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'records',
-
-      // 🔥 ADD THIS EXACTLY HERE
-      filter: PostgresChangeFilter(
-        type: PostgresChangeFilterType.eq,
-        column: 'user_id',
-        value: user.id,
-      ),
+    _recordsChannel = supabase
+        .channel('records_changes')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'records',
+          filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_id',
+          value: user.id,
+        ),
           callback: (payload) async {
             print("REALTIME EVENT TRIGGERED");
             print("Payload: ${payload.newRecord}");
