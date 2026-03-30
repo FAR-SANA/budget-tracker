@@ -50,11 +50,38 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     // 🔹 Normal app flow
     if (session != null) {
+  try {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    // 🔥 Try to validate user with backend
+    final response = await Supabase.instance.client.auth.getUser();
+
+    if (response.user == null) {
+      // ❌ Invalid session → logout
+      await Supabase.instance.client.auth.signOut();
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
-    } else {
+      return;
+    }
+
+    // ✅ Valid session
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+    );
+  } catch (e) {
+    // ❌ Any error → logout
+    await Supabase.instance.client.auth.signOut();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+}  else {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -76,7 +103,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
 
             const SizedBox(height: 20),
-
             Image.asset('assets/images/budgee_logo.png', height: 100),
           ],
         ),

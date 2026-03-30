@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'email_confirmation_screen.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -38,15 +39,16 @@ class _SignupScreenState extends State<SignupScreen> {
         password: passwordController.text.trim(),
          emailRedirectTo: 'com.example.budgee://login',
         data: {'name': nameController.text.trim()},
+
+        emailRedirectTo: 'com.example.budgee://login',
       );
 
       if (response.user != null) {
         // 🔥 EMAIL CONFIRMATION CHECK
         if (response.session == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Check your email to confirm your account"),
-            ),
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const EmailConfirmationScreen()),
           );
           return;
         }
