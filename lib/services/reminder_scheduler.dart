@@ -10,7 +10,7 @@ class ReminderScheduler {
     await NotificationService.plugin.cancel(100);
 
     // If already has expense today → don't notify
-    if (_hasTodayExpense(records)) return;
+    //if (_hasTodayExpense(records)) return;
 
     final now = tz.TZDateTime.now(tz.local);
 
@@ -19,7 +19,8 @@ class ReminderScheduler {
       now.year,
       now.month,
       now.day,
-      17, // 9 PM
+      23, // 9 PM
+      13,
     );
 
     if (scheduled.isBefore(now)) {
@@ -27,24 +28,24 @@ class ReminderScheduler {
     }
 
     await NotificationService.plugin.zonedSchedule(
-  100,
-  'Expense Reminder',
-  'You haven’t added today’s expenses yet 📒',
-  scheduled,
-  const NotificationDetails(
-    android: AndroidNotificationDetails(
-      'daily_reminder',
-      'Daily Reminder',
-      importance: Importance.high,
-      priority: Priority.high,
-    ),
-  ),
-  androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // ✅ ADD THIS
-  uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime,
-  matchDateTimeComponents: DateTimeComponents.time,
-);
-
+      100,
+      'Expense Reminder',
+      'You haven’t added today’s expenses yet 📒',
+      scheduled,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_reminder',
+          'Daily Reminder',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode:
+          AndroidScheduleMode.inexactAllowWhileIdle, // ✅ ADD THIS
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 
   static bool _hasTodayExpense(List<Record> records) {

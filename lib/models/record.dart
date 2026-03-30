@@ -39,6 +39,7 @@ class Record {
       repeatType: json['repeat_type'],
           accountId: json['account_id'],
             recurringRuleId: json['recurring_rule_id'],
+            budgetId: json['budget_id'],
     );
   }
 }

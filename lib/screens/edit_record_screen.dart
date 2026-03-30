@@ -30,9 +30,23 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
   String? oldBudgetId; // 🔥 track previous budget
   List accounts = [];
   String? selectedAccountName;
+  Future<void> _loadBudgetTitle() async {
+  final data = await Supabase.instance.client
+      .from('budgets')
+      .select('title')
+      .eq('budget_id', selectedBudgetId!)
+      .single();
+
+  if (!mounted) return;
+
+  setState(() {
+    selectedBudgetTitle = data['title'];
+  });
+}
   @override
   void initState() {
     super.initState();
+    
 
     titleCtrl = TextEditingController(text: widget.record.title);
     amountCtrl = TextEditingController(
@@ -53,6 +67,9 @@ class _EditRecordScreenState extends State<EditRecordScreen> {
     selectedBudgetId = widget.record.budgetId;
 
     _loadAccounts();
+    if (selectedBudgetId != null) {
+  _loadBudgetTitle();
+}
   }
 
   Future<void> _loadAccounts() async {
@@ -811,6 +828,7 @@ String _getNextDate(DateTime date, String frequency) {
           category: selectedCategory ?? "miscellaneous",
           accountId: newAccountId,
           repeatType: repeatType,
+          budgetId: selectedBudgetId,
         ),
       );
     } catch (e) {

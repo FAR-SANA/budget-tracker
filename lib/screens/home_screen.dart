@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../models/record.dart';
 import 'record_details_screen.dart';
 import '../models/account.dart';
+import '../services/reminder_scheduler.dart';
 import 'profile_screen.dart';
 import 'add_record_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -245,6 +246,7 @@ Future<void> _initialize() async {
       incomeUpToDate = inc;
       expenseUpToDate = exp;
     });
+    await ReminderScheduler.schedule(dayList);
   }
 
   Future<void> _deleteRecord(Record r) async {
@@ -300,20 +302,22 @@ Future<void> _initialize() async {
           .eq('account_id', r.accountId);
 
       // 🔥 4️⃣ UPDATE BUDGET BEFORE DELETING RECORD
-      if (r.budgetId != null) {
-        final budgetData = await supabase
-            .from('budgets')
-            .select('current_amount')
-            .eq('budget_id', r.budgetId!)
-            .single();
+      if (budgetId != null) {
+  final budgetList = await supabase
+      .from('budgets')
+      .select('current_amount')
+      .eq('budget_id', budgetId);
 
-        double currentBudget = (budgetData['current_amount'] ?? 0).toDouble();
+  if (budgetList.isNotEmpty) {
+    final currentBudget =
+        (budgetList.first['current_amount'] ?? 0).toDouble();
 
-        await supabase
-            .from('budgets')
-            .update({'current_amount': currentBudget - r.amount})
-            .eq('budget_id', r.budgetId!);
-      }
+    await supabase
+        .from('budgets')
+        .update({'current_amount': currentBudget - r.amount})
+        .eq('budget_id', budgetId);
+  }
+}
 
 
       // 🔥 4️⃣ Delete record

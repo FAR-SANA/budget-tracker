@@ -16,12 +16,14 @@ class RecordDetailsScreen extends StatefulWidget {
 class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
   String? repeatType;
   String? accountName;
+  String? budgetTitle;
 
   @override
   void initState() {
     super.initState();
     _loadAccount();
     _loadRepeatType();
+     _loadBudget();
   }
 
   Future<void> _loadRepeatType() async {
@@ -66,6 +68,35 @@ class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
       });
     }
   }
+
+Future<void> _loadBudget() async {
+  if (widget.record.budgetId == null) {
+    setState(() {
+      budgetTitle = null;
+    });
+    return;
+  }
+
+  try {
+    final data = await Supabase.instance.client
+        .from('budgets')
+        .select('title')
+        .eq('budget_id', widget.record.budgetId!)
+        .single();
+
+    if (!mounted) return;
+
+    setState(() {
+      budgetTitle = data['title'];
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() {
+      budgetTitle = "Unknown Budget";
+    });
+  }
+}
 
   String getRepeatLabel(String? repeat) {
     switch (repeat) {
@@ -236,20 +267,26 @@ class _RecordDetailsScreenState extends State<RecordDetailsScreen> {
 
               const SizedBox(height: 20),
 
-              // LINK BUDGET
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.incomeCard(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: const [
-                    Expanded(child: Text("Link to a budget")),
-                    Icon(Icons.keyboard_arrow_down),
-                  ],
-                ),
-              ),
+            // 🔥 BUDGET DISPLAY
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.symmetric(vertical: 14),
+  decoration: BoxDecoration(
+    color: AppColors.incomeCard(context),
+    borderRadius: BorderRadius.circular(12),
+  ),
+  child: Center(
+    child: Text(
+      budgetTitle ?? "No Budget Linked",
+      style: TextStyle(
+        color: budgetTitle == null
+            ? AppColors.subText(context)
+            : AppColors.text(context),
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  ),
+),
 
               const SizedBox(height: 24), // ✅ SPACE BETWEEN BUDGET & EDIT
               // EDIT BUTTON
