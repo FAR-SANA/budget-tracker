@@ -40,7 +40,6 @@ class _SignupScreenState extends State<SignupScreen> {
          emailRedirectTo: 'com.example.budgee://login',
         data: {'name': nameController.text.trim()},
 
-        emailRedirectTo: 'com.example.budgee://login',
       );
 
       if (response.user != null) {
